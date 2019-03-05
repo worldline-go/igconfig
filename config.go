@@ -4,7 +4,7 @@ import (
 	_ "strings"
 	_ "fmt"
 	_ "errors"
-	"finops/utils/iglog"
+	"gitlab.test.igdcs.com/finops/utils/basics/iglog.git"
 )
 
 func LoadConfig(l iglog.Log, c *interface{}) error {
