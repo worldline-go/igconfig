@@ -1,0 +1,41 @@
+## It will create a container from centos:latest image unless set here, and will execute following stages inside.
+## centos:latest is defined by default in config.toml file.
+## runner is the "aws jenkins"
+
+variables:
+  goimage: "golang:1.11.4"
+
+## spin-up a container from this image for all tasks.
+image: $goimage
+
+## stages for ci/cd
+stages:
+  - build
+  - test
+
+## Build Stage
+## Compile
+compile:
+  stage: build
+  before_script:
+    - cp -r . $GOPATH/src/$CI_PROJECT_NAME
+    - cd $GOPATH/src/$CI_PROJECT_NAME
+    - export GO111MODULE=on
+  script:
+    - "echo '############ Starting Compile ###########'"
+    - go build *.go
+    - "echo '############ Starting Unit Tests ###########'"
+    - go test *.go
+  tags:
+    - awsrunner
+
+## Test Stage
+## Lint
+lint test:
+  stage: test
+  before_script:
+    - go get -u golang.org/x/lint/golint
+  script:
+    - golint -set_exit_status
+  tags:
+    - awsrunner
