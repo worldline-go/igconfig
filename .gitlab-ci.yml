@@ -3,7 +3,7 @@
 ## runner is the "aws jenkins"
 
 variables:
-  goimage: "golang:1.11.4"
+  goimage: "golang:1.12.1"
 
 ## spin-up a container from this image for all tasks.
 image: $goimage
@@ -18,12 +18,15 @@ stages:
 compile:
   stage: build
   before_script:
-    - cp -r . $GOPATH/src/$CI_PROJECT_NAME
-    - cd $GOPATH/src/$CI_PROJECT_NAME
+    - mkdir ~/tmp
+    - mkdir ~/tmp/$CI_PROJECT_NAME
+    - cp -r . ~/tmp/$CI_PROJECT_NAME
+    - cd ~/tmp/$CI_PROJECT_NAME
     - export GO111MODULE=on
-    - git config --add url.git@gitlab.test.igdcs.com:.insteadof https://gitlab.test.igdcs.com/
+    - git config --global url."https://".insteadOf git://
   script:
     - "echo '############ Starting Compile ###########'"
+    - go mod tidy
     - go build *.go
     - "echo '############ Starting Unit Tests ###########'"
     - go test *.go
