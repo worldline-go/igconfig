@@ -21,6 +21,7 @@ compile:
     - cp -r . $GOPATH/src/$CI_PROJECT_NAME
     - cd $GOPATH/src/$CI_PROJECT_NAME
     - export GO111MODULE=on
+    - git config --add url.git@gitlab.test.igdcs.com:.insteadof https://gitlab.test.igdcs.com/
   script:
     - "echo '############ Starting Compile ###########'"
     - go build *.go
