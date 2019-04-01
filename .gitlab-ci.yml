@@ -10,36 +10,40 @@ image: $goimage
 
 ## stages for ci/cd
 stages:
+  - lint
   - build
   - test
 
+## Lint stage
+linter:
+  stage: lint
+  before_script:
+    - go get -u golang.org/x/lint/golint
+  script:
+    - "echo '############ Starting Lint ###########'"
+    - golint -set_exit_status
+  tags:
+    - awsrunner
+
 ## Build Stage
-## Compile
-compile:
+builder:
   stage: build
   before_script:
-    - mkdir ~/tmp
-    - mkdir ~/tmp/$CI_PROJECT_NAME
-    - cp -r . ~/tmp/$CI_PROJECT_NAME
-    - cd ~/tmp/$CI_PROJECT_NAME
     - export GO111MODULE=on
-    - git config --global url."https://".insteadOf git://
   script:
-    - "echo '############ Starting Compile ###########'"
+    - "echo '############ Starting Build ###########'"
     - go mod tidy
     - go build *.go
-    - "echo '############ Starting Unit Tests ###########'"
-    - go test *.go
   tags:
     - awsrunner
 
 ## Test Stage
-## Lint
-lint test:
+tester:
   stage: test
   before_script:
-    - go get -u golang.org/x/lint/golint
+    - export GO111MODULE=on
   script:
-    - golint -set_exit_status
+    - "echo '############ Starting Unit Tests ###########'"
+    - go test *.go
   tags:
     - awsrunner
