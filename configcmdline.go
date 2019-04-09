@@ -74,8 +74,9 @@ func loadCmdline (c interface{}) {
 
 		for _, n := range nn {
 			flg := flags.Lookup(n)
-			v   := flg.Value.String()
+			
 			if flg != nil {
+			    v   := flg.Value.String()
 				switch f.Type.Kind() {
 					case reflect.Bool:
 						b := isTrue(v)
