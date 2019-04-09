@@ -1,0 +1,6 @@
+*.exe
+*.pub
+*.lock
+docs/swagger
+vendor/
+go.sum
