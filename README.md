@@ -1,3 +1,6 @@
+[![pipeline status](https://gitlab.test.igdcs.com/finops/utils/basics/iglog/badges/master/pipeline.svg)](https://gitlab.test.igdcs.com/finops/utils/basics/iglog/commits/master)
+[![coverage report](https://gitlab.test.igdcs.com/finops/utils/basics/iglog/badges/master/coverage.svg)](https://gitlab.test.igdcs.com/finops/utils/basics/iglog/commits/master)
+
 # igconfig package
 
 igconfig package can be used to load configuration values from a configration file,
@@ -11,7 +14,7 @@ This package requires the following packages:
 ## Install
 
 Clone this repo.
-Install [GoLang] >= 1.11  (https://golang.org/doc/install).
+Install [GoLang] >= 1.12  (https://golang.org/doc/install).
 ```
 cd <reponame>
 go build *.go
@@ -21,6 +24,13 @@ go build *.go
 ```
 cd <reponame>
 go test
+```
+
+## Code coverage report (Browser)
+```
+cd <reponame>
+go test -coverprofile=cover.out
+go tool cover -html=cover.out
 ```
 
 ## Description

@@ -4,3 +4,4 @@
 docs/swagger
 vendor/
 go.sum
+cover.out

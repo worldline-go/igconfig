@@ -14,13 +14,13 @@ stages:
   - build
   - test
 
-## Lint stage
+## Lint Stage
 linter:
   stage: lint
   before_script:
     - go get -u golang.org/x/lint/golint
   script:
-    - "echo '############ Starting Lint ###########'"
+    - "echo '############ Starting Lint Tests ###########'"
     - golint -set_exit_status
   tags:
     - awsrunner
@@ -29,10 +29,11 @@ linter:
 builder:
   stage: build
   before_script:
+    - cp -r . $GOPATH/src/$CI_PROJECT_NAME
+    - cd $GOPATH/src/$CI_PROJECT_NAME
     - export GO111MODULE=on
   script:
-    - "echo '############ Starting Build ###########'"
-    - go mod tidy
+    - "echo '############ Starting Compile ###########'"
     - go build *.go
   tags:
     - awsrunner
@@ -41,9 +42,13 @@ builder:
 tester:
   stage: test
   before_script:
+    - cp -r . $GOPATH/src/$CI_PROJECT_NAME
+    - cd $GOPATH/src/$CI_PROJECT_NAME
     - export GO111MODULE=on
   script:
     - "echo '############ Starting Unit Tests ###########'"
-    - go test *.go
+    - go test
+    - "echo '############ Starting Coverage Test ###########'"
+    - go test -cover -v
   tags:
     - awsrunner
