@@ -1,6 +1,7 @@
 [![pipeline status](https://gitlab.test.igdcs.com/finops/utils/basics/iglog/badges/master/pipeline.svg)](https://gitlab.test.igdcs.com/finops/utils/basics/iglog/commits/master)
 [![coverage report](https://gitlab.test.igdcs.com/finops/utils/basics/iglog/badges/master/coverage.svg)](https://gitlab.test.igdcs.com/finops/utils/basics/iglog/commits/master)
 
+
 # igconfig package
 
 igconfig package can be used to load configuration values from a configration file,
