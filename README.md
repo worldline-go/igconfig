@@ -1,6 +1,5 @@
-[![pipeline status](https://gitlab.test.igdcs.com/finops/utils/basics/iglog/badges/master/pipeline.svg)](https://gitlab.test.igdcs.com/finops/utils/basics/iglog/commits/master)
-[![coverage report](https://gitlab.test.igdcs.com/finops/utils/basics/iglog/badges/master/coverage.svg)](https://gitlab.test.igdcs.com/finops/utils/basics/iglog/commits/master)
-
+[![pipeline status](https://gitlab.test.igdcs.com/finops/utils/basics/igconfig/badges/master/pipeline.svg)](https://gitlab.test.igdcs.com/finops/utils/basics/igconfig/commits/master)
+[![coverage report](https://gitlab.test.igdcs.com/finops/utils/basics/igconfig/badges/master/coverage.svg)](https://gitlab.test.igdcs.com/finops/utils/basics/igconfig/commits/master)
 
 # igconfig package
 
