@@ -51,4 +51,18 @@ func setValue(c interface{}, f reflect.StructField, v string) {
 		default:
 			iglog.Warnf("LoadConfig: field %s unsupported type %s", f.Name, f.Type.Name())
 	}
+
+	if strings.ToUpper(k) == "LOGLEVEL" {
+		switch strings.ToUpper(v) {
+			case "DEBUGFULL"          : iglog.SetLevel(iglog.LogDebugFull)
+			case "DEBUGMEDIUM"        : iglog.SetLevel(iglog.LogDebugMedium)
+			case "DEBUGSMALL", "DEBUG": iglog.SetLevel(iglog.LogDebugSmall)
+			case "INFO"               : iglog.SetLevel(iglog.LogInfo)
+			case "WARN", "WARNING"    : iglog.SetLevel(iglog.LogWarn)
+			case "ERROR"              : iglog.SetLevel(iglog.LogError)
+			case "FATAL"              : iglog.SetLevel(iglog.LogFatal)
+			case "PANIC"              : iglog.SetLevel(iglog.LogPanic)
+			case "DEFAULT"            : iglog.SetLevel(iglog.LogDefault)
+		}
+	}
 }
