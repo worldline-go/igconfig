@@ -61,9 +61,9 @@ func loadCmdline (c interface{}) {
 		f   := t.Field(i)
 		val := e.FieldByName(f.Name)
 
-		var nn  []string
-		var new interface{}
-		
+		var nn     []string
+		var newVal string
+
 		if tag, ok := f.Tag.Lookup("cmd"); ok {
 			nn = strings.Split(tag, ",")
 		}
@@ -76,67 +76,42 @@ func loadCmdline (c interface{}) {
 			flg := flags.Lookup(n)
 			
 			if flg != nil {
-			    v   := flg.Value.String()
+			    v := flg.Value.String()
 				switch f.Type.Kind() {
 					case reflect.Bool:
 						b := isTrue(v)
 						if b != val.Bool() {
-							new = b
+							newVal = v
 						}
 
 					case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 						i, err := strconv.ParseInt(v, 0, 64)
 						if err == nil && i != val.Int() {
-							new = i
+							newVal = v
 						}
 
 					case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 						i, err := strconv.ParseUint(v, 0, 64)
 						if err == nil && i != val.Uint() {
-							new = i
+							newVal = v
 						}
 
 					case reflect.Float32, reflect.Float64:
 						i, err := strconv.ParseFloat(v, 64)
 						if err == nil && i != val.Float() {
-							new = i
+							newVal = v
 						}
 
 					case reflect.String:
 						if v != val.String() {
-							new = v
+							newVal = v
 						}
 				}
 			}
 		}
 
-		if new != nil {
-			switch f.Type.Kind() {
-				case reflect.Bool:
-					if new.(bool) != val.Bool() {
-						val.SetBool(new.(bool))
-					}
-
-				case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-					if new.(int64) != val.Int() {
-						val.SetInt(new.(int64))
-					}
-
-				case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-					if new.(uint64) != val.Uint() {
-						val.SetUint(new.(uint64))
-					}
-
-				case reflect.Float32, reflect.Float64:
-					if new.(float64) != val.Float() {
-						val.SetFloat(new.(float64))
-					}
-
-				case reflect.String:
-					if new.(string) != val.String() {
-						val.SetString(new.(string))
-					}
-			}
+		if newVal != "" {
+			setValue(c, f, newVal)
 		}
 	}
 }
