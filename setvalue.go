@@ -1,10 +1,10 @@
 package igconfig
 
 import (
-	"reflect"
-	"strings"
-	"strconv"
 	"gitlab.test.igdcs.com/finops/utils/basics/iglog.git"
+	"reflect"
+	"strconv"
+	"strings"
 )
 
 // isTrue compares a string to determine the boolean value
