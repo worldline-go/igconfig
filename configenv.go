@@ -1,10 +1,10 @@
 package igconfig
 
 import (
+	"gitlab.test.igdcs.com/finops/utils/basics/iglog.git"
+	"os"
 	"reflect"
 	"strings"
-	"os"
-	"gitlab.test.igdcs.com/finops/utils/basics/iglog.git"
 )
 
 // loadEnv loads config values from the environment

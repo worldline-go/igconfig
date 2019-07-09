@@ -1,12 +1,12 @@
 package igconfig
 
 import (
-	"os"
 	"bufio"
-	"strings"
 	"errors"
-	"reflect"
 	"gitlab.test.igdcs.com/finops/utils/basics/iglog.git"
+	"os"
+	"reflect"
+	"strings"
 )
 
 // loadConfigFile loads config values from a file

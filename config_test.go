@@ -1,8 +1,8 @@
 package igconfig
 
 import (
-	"testing"
 	"os"
+	"testing"
 )
 
 type MyConfig struct {
