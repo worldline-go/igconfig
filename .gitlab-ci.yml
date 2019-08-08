@@ -18,10 +18,15 @@ stages:
 linter:
   stage: lint
   before_script:
-    - go get -u golang.org/x/lint/golint
+    - cp -r . $GOPATH/src/$CI_PROJECT_NAME
+    - cd $GOPATH/src/$CI_PROJECT_NAME
+    - export GO111MODULE=on
+    - wget -O - -q https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin "$golangci_lint_version"
   script:
     - "echo '############ Starting Lint Tests ###########'"
-    - golint -set_exit_status
+    - go mod download
+    - golangci-lint --version
+    - golangci-lint run
   tags:
     - awsrunner
 

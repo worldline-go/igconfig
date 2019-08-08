@@ -8,16 +8,16 @@ import (
 type MyConfig struct {
 	Name   string  `cfg:"settle_name"    env:"name"           cmd:"name,n"           default:"Jan"`
 	Age    int     `cfg:"age"            env:"age"            cmd:"age,a"            default:"18"`
-	Salary float64 `cfg:"salary"         env:"salary"         cmd:"salary,s"         default:"2000.00"  loggable:false`
+	Salary float64 `cfg:"salary"         env:"salary"         cmd:"salary,s"         default:"2000.00"  loggable:"false"`
 	Host   string  `cfg:"host,hostname"  env:"host,hostname"  cmd:"host,hostname,h"  default:"localhost"`
 	Port   int     `cfg:"port"           env:"port"           cmd:"port,p"           default:"8080"`
-	Secure bool    `cfg:"secure,ssl,tls" env:"secure,ssl,tls" cmd:"secure,ssl,tls,t" default:"false"    loggable:false`
+	Secure bool    `cfg:"secure,ssl,tls" env:"secure,ssl,tls" cmd:"secure,ssl,tls,t" default:"false"    loggable:"false"`
 }
 
 func TestDefaults(t *testing.T) {
 	var c MyConfig
 
-	err := LoadConfig(&c, "", false, false, false)
+	err := LoadConfig(&c, "", false, false)
 	if err != nil {
 		t.Errorf("TestDefaults failed: %s", err.Error())
 	}
@@ -46,10 +46,10 @@ func TestEnv(t *testing.T) {
 	os.Setenv("HOST", "127.0.0.1")
 	os.Setenv("Port", "12345")
 	os.Setenv("age", "44")
-	
+
 	var c MyConfig
 
-	err := LoadConfig(&c, "", true, false, false)
+	err := LoadConfig(&c, "", true, false)
 	if err != nil {
 		t.Errorf("TestEnv failed: %s", err.Error())
 	}
@@ -75,11 +75,11 @@ func TestEnv(t *testing.T) {
 }
 
 func TestCmdline(t *testing.T) {
-	os.Args = []string {"program", "-t", "-n", "Piet", "--port", "1234", "--hostname=bol.com"}
-	
+	os.Args = []string{"program", "-t", "-n", "Piet", "--port", "1234", "--hostname=bol.com"}
+
 	var c MyConfig
 
-	err := LoadConfig(&c, "", false, true, false)
+	err := LoadConfig(&c, "", false, true)
 	if err != nil {
 		t.Errorf("TestCmdline failed: %s", err.Error())
 	}
