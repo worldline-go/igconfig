@@ -9,7 +9,6 @@ environment variables and/or command-line parameters.
 ## Requirements
 This package requires the following packages:
 - igstrings
-- iglog
 
 ## Install
 
@@ -36,13 +35,12 @@ go tool cover -html=cover.out
 ## Description
 There is only a single exported function:
 ```
-func LoadConfig(c interface{}, file string, env bool, cmd bool, log bool) error
+func LoadConfig(c interface{}, file string, env, cmd bool) error
 ```
 - c must be a pointer to struct or the function will fail with an error.
 - file is the path to a configuration file (if an empty string, no file will be checked).
 - env is a flag to indicate environment variables should be checked.
 - cmd is a flag to indicate command-line parameters should be checked.
-- log is a flag to indicate the loaded configuration structure should be logged.
 
 ### Config struct
 The parameter c should be a pointer to a struct type.
