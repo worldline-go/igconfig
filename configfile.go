@@ -8,8 +8,8 @@ import (
 	"strings"
 )
 
-// loadConfigFile loads config values from a file
-func (m *myConfig) loadConfigFile() error {
+// loadFile loads config values from a file
+func (m *myConfig) loadFile() error {
 	t := reflect.TypeOf(m.c)
 	if t.Kind() != reflect.Struct {
 		return errors.New("LoadConfig: input parameter is not a struct")
