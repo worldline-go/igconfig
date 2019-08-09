@@ -13,10 +13,20 @@ import (
 
 // loadCmdline loads config values from the command line
 func (m *myConfig) loadCmdline() {
-	flags := flag.FlagSet{Usage: func() {}}
+	const funcName = "loadCmdline"
 
-	e := reflect.ValueOf(m.c).Elem()
+	v := reflect.ValueOf(m.c)
+	if v.Kind() != reflect.Ptr {
+		return
+	}
+
+	e := v.Elem()
 	t := e.Type()
+	if t.Kind() != reflect.Struct {
+		return
+	}
+
+	flags := flag.FlagSet{Usage: func() {}}
 
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
@@ -45,7 +55,7 @@ func (m *myConfig) loadCmdline() {
 	}
 
 	if err := flags.Parse(os.Args[1:]); err != nil {
-		m.warnings = append(m.warnings, fmt.Sprintf("Could not parse command-line parameters: %s", err.Error()))
+		m.warnings = append(m.warnings, fmt.Sprintf("%s could not parse command-line parameters: %s", funcName, err.Error()))
 	}
 
 	for i := 0; i < t.NumField(); i++ {

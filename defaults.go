@@ -1,20 +1,22 @@
 package igconfig
 
 import (
-	"errors"
+	"fmt"
 	"reflect"
 )
 
 // loadDefaults loads the config struct fields with their default value as defined in the tags
 func (m *myConfig) loadDefaults() error {
+	const funcName = "loadDefaults"
+
 	v := reflect.ValueOf(m.c)
 	if v.Kind() != reflect.Ptr {
-		return errors.New("LoadConfig: input parameter not a pointer")
+		return fmt.Errorf("%s: input parameter not a pointer", funcName)
 	}
 
 	t := v.Elem().Type()
 	if t.Kind() != reflect.Struct {
-		return errors.New("LoadConfig: input parameter not a struct")
+		return fmt.Errorf("%s: input parameter not a struct", funcName)
 	}
 
 	for i := 0; i < t.NumField(); i++ {

@@ -14,6 +14,8 @@ func isTrue(substring string) bool {
 
 // setValue sets a value in the config struct
 func (m *myConfig) setValue(v string) {
+	const funcName = "setValue"
+
 	k := m.f.Name
 	val := reflect.ValueOf(m.c).Elem().FieldByName(k)
 
@@ -24,7 +26,7 @@ func (m *myConfig) setValue(v string) {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		n, err := strconv.ParseInt(v, 0, 64)
 		if err != nil {
-			m.warnings = append(m.warnings, fmt.Sprintf("LoadConfig: value for field %s not a valid integer", k))
+			m.warnings = append(m.warnings, fmt.Sprintf("%s: value for field %s not a valid integer", funcName, k))
 		} else {
 			val.SetInt(n)
 		}
@@ -32,7 +34,7 @@ func (m *myConfig) setValue(v string) {
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		n, err := strconv.ParseUint(v, 0, 64)
 		if err != nil {
-			m.warnings = append(m.warnings, fmt.Sprintf("LoadConfig: value for field %s not a valid unsigned integer", k))
+			m.warnings = append(m.warnings, fmt.Sprintf("%s: value for field %s not a valid unsigned integer", funcName, k))
 		} else {
 			val.SetUint(n)
 		}
@@ -40,7 +42,7 @@ func (m *myConfig) setValue(v string) {
 	case reflect.Float32, reflect.Float64:
 		n, err := strconv.ParseFloat(v, 64)
 		if err != nil {
-			m.warnings = append(m.warnings, fmt.Sprintf("LoadConfig: value for field %s not a valid float", k))
+			m.warnings = append(m.warnings, fmt.Sprintf("%s: value for field %s not a valid float", funcName, k))
 		} else {
 			val.SetFloat(n)
 		}
@@ -49,6 +51,6 @@ func (m *myConfig) setValue(v string) {
 		val.SetString(v)
 
 	default:
-		m.warnings = append(m.warnings, fmt.Sprintf("LoadConfig: field %s unsupported type %s", m.f.Name, m.f.Type.Name()))
+		m.warnings = append(m.warnings, fmt.Sprintf("%s: field %s unsupported type %s", funcName, m.f.Name, m.f.Type.Name()))
 	}
 }

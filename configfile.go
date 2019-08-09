@@ -2,7 +2,7 @@ package igconfig
 
 import (
 	"bufio"
-	"errors"
+	"fmt"
 	"os"
 	"reflect"
 	"strings"
@@ -10,9 +10,16 @@ import (
 
 // loadFile loads config values from a file
 func (m *myConfig) loadFile() error {
-	t := reflect.TypeOf(m.c)
+	const funcName = "loadFile"
+
+	v := reflect.ValueOf(m.c)
+	if v.Kind() != reflect.Ptr {
+		return fmt.Errorf("%s: input parameter not a pointer", funcName)
+	}
+
+	t := v.Elem().Type()
 	if t.Kind() != reflect.Struct {
-		return errors.New("LoadConfig: input parameter is not a struct")
+		return fmt.Errorf("%s: input parameter not a struct", funcName)
 	}
 
 	f, err := os.Open(m.file)

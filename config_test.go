@@ -43,9 +43,15 @@ func TestDefaults(t *testing.T) {
 }
 
 func TestEnv(t *testing.T) {
-	os.Setenv("HOST", "127.0.0.1")
-	os.Setenv("Port", "12345")
-	os.Setenv("age", "44")
+	if err := os.Setenv("HOST", "127.0.0.1"); err != nil {
+		t.Errorf("Could not set environment variable 'HOST'")
+	}
+	if err := os.Setenv("Port", "12345"); err != nil {
+		t.Errorf("Could not set environment variable 'Port'")
+	}
+	if err := os.Setenv("age", "44"); err != nil {
+		t.Errorf("Could not set environment variable 'age'")
+	}
 
 	var c MyConfig
 

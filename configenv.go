@@ -8,8 +8,16 @@ import (
 
 // loadEnv loads config values from the environment
 func (m *myConfig) loadEnv() {
-	e := reflect.ValueOf(m.c).Elem()
+	v := reflect.ValueOf(m.c)
+	if v.Kind() != reflect.Ptr {
+		return
+	}
+
+	e := v.Elem()
 	t := e.Type()
+	if t.Kind() != reflect.Struct {
+		return
+	}
 
 	for i := 0; i < t.NumField(); i++ {
 		m.f = t.Field(i)
