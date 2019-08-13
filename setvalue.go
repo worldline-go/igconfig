@@ -13,7 +13,7 @@ func isTrue(substring string) bool {
 }
 
 // setValue sets a value in the config struct
-func (m *localData) setValue(fieldName string, v string) {
+func (m *localData) setValue(fieldName, v string) {
 	const funcName = "setValue"
 
 	val := m.userStruct.FieldByName(fieldName)

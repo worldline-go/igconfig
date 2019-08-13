@@ -25,7 +25,6 @@ func (m *localData) loadReader(r io.Reader) error {
 		s := scanner.Text()
 
 		s = strings.TrimSpace(s)
-
 		if s == "" || strings.HasPrefix(s, "//") || strings.HasPrefix(s, "#") {
 			continue
 		}

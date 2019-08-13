@@ -31,7 +31,6 @@ func (m *localData) loadCmdline(args []string) error {
 
 			switch field.Type.Kind() {
 			case reflect.Bool:
-				//flag.BoolVar(val.Addr().Interface().(*bool), n, val.Bool(), "")
 				flags.Bool(n, val.Bool(), "")
 			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 				flags.Int64(n, val.Int(), "")

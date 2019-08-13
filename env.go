@@ -2,7 +2,6 @@ package igconfig
 
 import (
 	"os"
-	"reflect"
 	"strings"
 )
 
@@ -12,10 +11,10 @@ func (m *localData) loadEnv() {
 
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
-		if !m.testEnv(field.Name, m.userStruct.FieldByName(field.Name), field.Name) {
+		if !m.testEnv(field.Name, field.Name) {
 			nn := strings.Split(field.Tag.Get("env"), ",")
 			for _, n := range nn {
-				if m.testEnv(field.Name, m.userStruct.FieldByName(field.Name), n) {
+				if m.testEnv(field.Name, n) {
 					break
 				}
 			}
@@ -24,7 +23,7 @@ func (m *localData) loadEnv() {
 }
 
 // testEnv tests for an environment variable, and if found sets the field's value
-func (m *localData) testEnv(fieldName string, val reflect.Value, n string) bool {
+func (m *localData) testEnv(fieldName, n string) bool {
 	if v, ok := os.LookupEnv(n); ok {
 		m.setValue(fieldName, v)
 		return true
