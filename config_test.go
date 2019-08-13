@@ -1,111 +1,139 @@
 package igconfig
 
 import (
+	"io/ioutil"
 	"os"
 	"testing"
 )
 
-type MyConfig struct {
+type testConfig struct {
 	Name   string  `cfg:"settle_name"    env:"name"           cmd:"name,n"           default:"Jan"`
-	Age    int     `cfg:"age"            env:"age"            cmd:"age,a"            default:"18"`
+	Age    uint    `cfg:"age"            env:"age"            cmd:"age,a"            default:"18"`
 	Salary float64 `cfg:"salary"         env:"salary"         cmd:"salary,s"         default:"2000.00"  loggable:"false"`
 	Host   string  `cfg:"host,hostname"  env:"host,hostname"  cmd:"host,hostname,h"  default:"localhost"`
 	Port   int     `cfg:"port"           env:"port"           cmd:"port,p"           default:"8080"`
 	Secure bool    `cfg:"secure,ssl,tls" env:"secure,ssl,tls" cmd:"secure,ssl,tls,t" default:"false"    loggable:"false"`
+	Unused []string
 }
 
-func TestDefaults(t *testing.T) {
-	var c MyConfig
+type badDefaults struct {
+	Age    uint    `cfg:"age"            env:"age"            cmd:"age,a"            default:"haha"`
+	Salary float64 `cfg:"salary"         env:"salary"         cmd:"salary,s"         default:"haha"`
+	Port   int     `cfg:"port"           env:"port"           cmd:"port,p"           default:"haha"`
+}
 
-	err := LoadConfig(&c, "", false, false)
-	if err != nil {
-		t.Errorf("TestDefaults failed: %s", err.Error())
+func TestConfigParm(t *testing.T) {
+	const funcName = "TestConfigParm"
+
+	i := 0
+
+	if testConfigParm(i) == nil {
+		t.Errorf("%s failed to test for invalid input parameter (not pointer)", funcName)
 	}
 
-	if c.Name != "Jan" {
-		t.Errorf("TestEnv name mismatch; got: %s; want: %s", c.Name, "Jan")
-	}
-	if c.Age != 18 {
-		t.Errorf("TestEnv age mismatch; got: %d; want: %d", c.Age, 18)
-	}
-	if c.Salary != 2000.0 {
-		t.Errorf("TestEnv salary mismatch; got: %.2f; want: %.2f", c.Salary, 2000.0)
-	}
-	if c.Host != "localhost" {
-		t.Errorf("TestEnv host mismatch; got: %s; want: %s", c.Host, "localhost")
-	}
-	if c.Port != 8080 {
-		t.Errorf("TestEnv port mismatch; got: %d; want: %d", c.Port, 8080)
-	}
-	if c.Secure != false {
-		t.Errorf("TestEnv secure mismatch; got: %t; want: %t", c.Secure, false)
+	if testConfigParm(&i) == nil {
+		t.Errorf("%s failed to test for invalid input parameter (not struct)", funcName)
 	}
 }
 
-func TestEnv(t *testing.T) {
-	if err := os.Setenv("HOST", "127.0.0.1"); err != nil {
-		t.Errorf("Could not set environment variable 'HOST'")
-	}
-	if err := os.Setenv("Port", "12345"); err != nil {
-		t.Errorf("Could not set environment variable 'Port'")
-	}
-	if err := os.Setenv("age", "44"); err != nil {
-		t.Errorf("Could not set environment variable 'age'")
+func TestLoadConfigDefaults(t *testing.T) {
+	const funcName = "TestLoadConfigDefaults"
+
+	c1 := badDefaults{}
+	if LoadConfigDefaults(&c1) == nil {
+		t.Errorf("%s failed to test for bad defaults", funcName)
 	}
 
-	var c MyConfig
-
-	err := LoadConfig(&c, "", true, false)
-	if err != nil {
-		t.Errorf("TestEnv failed: %s", err.Error())
-	}
-
-	if c.Name != "Jan" {
-		t.Errorf("TestEnv name mismatch; got: %s; want: %s", c.Name, "Jan")
-	}
-	if c.Age != 44 {
-		t.Errorf("TestEnv age mismatch; got: %d; want: %d", c.Age, 44)
-	}
-	if c.Salary != 2000.0 {
-		t.Errorf("TestEnv salary mismatch; got: %.2f; want: %.2f", c.Salary, 2000.0)
-	}
-	if c.Host != "127.0.0.1" {
-		t.Errorf("TestEnv host mismatch; got: %s; want: %s", c.Host, "127.0.0.1")
-	}
-	if c.Port != 12345 {
-		t.Errorf("TestEnv port mismatch; got: %d; want: %d", c.Port, 12345)
-	}
-	if c.Secure != false {
-		t.Errorf("TestEnv secure mismatch; got: %t; want: %t", c.Secure, false)
+	c2 := testConfig{}
+	if LoadConfigDefaults(&c2) != nil {
+		t.Errorf("%s failed to load good defaults", funcName)
 	}
 }
 
-func TestCmdline(t *testing.T) {
-	os.Args = []string{"program", "-t", "-n", "Piet", "--port", "1234", "--hostname=bol.com"}
+func TestLoadConfigFile(t *testing.T) {
+	const funcName = "TestLoadConfigFile"
 
-	var c MyConfig
-
-	err := LoadConfig(&c, "", false, true)
-	if err != nil {
-		t.Errorf("TestCmdline failed: %s", err.Error())
+	i := 0
+	if LoadConfigFile(i, "/tmp/haha.txt") == nil {
+		t.Errorf("%s failed to test for invalid fileName name", funcName)
 	}
 
-	if c.Name != "Piet" {
-		t.Errorf("TestEnv name mismatch; got: %s; want: %s", c.Name, "Piet")
+	var c testConfig
+	if LoadConfigFile(&c, "/dev/null") != nil {
+		t.Errorf("%s failed to load fileName /dev/null", funcName)
 	}
-	if c.Age != 18 {
-		t.Errorf("TestEnv age mismatch; got: %d; want: %d", c.Age, 18)
+
+	const fileName = "/tmp/TestFileBadData.cfg"
+	const fileData = "age=haha"
+
+	if err := ioutil.WriteFile(fileName, []byte(fileData), 0644); err != nil {
+		t.Errorf("%s could not write temporary fileName '%s'", funcName, fileName)
+		return
 	}
-	if c.Salary != 2000.0 {
-		t.Errorf("TestEnv salary mismatch; got: %.2f; want: %.2f", c.Salary, 2000.0)
+	defer os.Remove(fileName)
+
+	if LoadConfigFile(&c, fileName) == nil {
+		t.Errorf("%s failed to check for parsing errors", funcName)
 	}
-	if c.Host != "bol.com" {
-		t.Errorf("TestEnv host mismatch; got: %s; want: %s", c.Host, "bol.com")
+}
+
+func TestLoadConfigEnv(t *testing.T) {
+	const funcName = "TestLoadConfigEnv"
+
+	var c testConfig
+	if LoadConfigEnv(&c) != nil {
+		t.Errorf("%s failed to load environment", funcName)
 	}
-	if c.Port != 1234 {
-		t.Errorf("TestEnv port mismatch; got: %d; want: %d", c.Port, 1234)
+
+	if os.Setenv("Port", "haha") != nil {
+		t.Errorf("%s could not set environment variable 'Port'", funcName)
 	}
-	if c.Secure != true {
-		t.Errorf("TestEnv secure mismatch; got: %t; want: %t", c.Secure, true)
+
+	if LoadConfigEnv(&c) == nil {
+		t.Errorf("%s failed to test for parsing error", funcName)
 	}
+
+	if os.Unsetenv("Port") != nil {
+		t.Errorf("%s could not unset environment variable 'Port'", funcName)
+	}
+}
+
+func TestLoadConfigCmdline(t *testing.T) {
+	const funcName = "TestLoadConfigCmdline"
+
+	var c testConfig
+
+	os.Args = []string{"program"}
+	if LoadConfigCmdline(&c) != nil {
+		t.Errorf("%s failed to load command-line parameters", funcName)
+	}
+
+	os.Args = []string{"program", "--age", "haha"}
+	if LoadConfigCmdline(&c) == nil {
+		t.Errorf("%s failed to test for parsing error", funcName)
+	}
+
+	os.Args = []string{"program"}
+}
+
+func TestLoadConfig(t *testing.T) {
+	const funcName = "TestLoadConfig"
+
+	var c testConfig
+	if LoadConfig(&c, "/tmp/haha.txt", true, true) == nil {
+		t.Errorf("%s failed to check for bad fileName", funcName)
+	}
+
+	if LoadConfig(&c, "/dev/null", true, true) != nil {
+		t.Errorf("%s failed to load configuration", funcName)
+	}
+
+	os.Args = []string{"program", "--age", "haha", "--salary", "nothing"}
+
+	c = testConfig{}
+	if LoadConfig(&c, "", true, true) == nil {
+		t.Errorf("%s failed to check for parsing errors", funcName)
+	}
+
+	os.Args = []string{"program"}
 }
