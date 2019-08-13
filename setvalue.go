@@ -13,20 +13,20 @@ func isTrue(substring string) bool {
 }
 
 // setValue sets a value in the config struct
-func (m *myConfig) setValue(v string) {
+func (m *localData) setValue(v string) {
 	const funcName = "setValue"
 
-	k := m.f.Name
-	val := reflect.ValueOf(m.c).Elem().FieldByName(k)
+	k := m.fld.Name
+	val := reflect.ValueOf(m.userStruct).Elem().FieldByName(k)
 
-	switch m.f.Type.Kind() {
+	switch m.fld.Type.Kind() {
 	case reflect.Bool:
 		val.SetBool(isTrue(v))
 
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		n, err := strconv.ParseInt(v, 0, 64)
 		if err != nil {
-			m.warnings = append(m.warnings, fmt.Sprintf("%s: value for field %s not a valid integer", funcName, k))
+			m.messages = append(m.messages, fmt.Sprintf("%s: value for field %s not a valid integer", funcName, k))
 		} else {
 			val.SetInt(n)
 		}
@@ -34,7 +34,7 @@ func (m *myConfig) setValue(v string) {
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		n, err := strconv.ParseUint(v, 0, 64)
 		if err != nil {
-			m.warnings = append(m.warnings, fmt.Sprintf("%s: value for field %s not a valid unsigned integer", funcName, k))
+			m.messages = append(m.messages, fmt.Sprintf("%s: value for field %s not a valid unsigned integer", funcName, k))
 		} else {
 			val.SetUint(n)
 		}
@@ -42,7 +42,7 @@ func (m *myConfig) setValue(v string) {
 	case reflect.Float32, reflect.Float64:
 		n, err := strconv.ParseFloat(v, 64)
 		if err != nil {
-			m.warnings = append(m.warnings, fmt.Sprintf("%s: value for field %s not a valid float", funcName, k))
+			m.messages = append(m.messages, fmt.Sprintf("%s: value for field %s not a valid float", funcName, k))
 		} else {
 			val.SetFloat(n)
 		}
@@ -51,6 +51,6 @@ func (m *myConfig) setValue(v string) {
 		val.SetString(v)
 
 	default:
-		m.warnings = append(m.warnings, fmt.Sprintf("%s: field %s unsupported type %s", funcName, m.f.Name, m.f.Type.Name()))
+		m.messages = append(m.messages, fmt.Sprintf("%s: field %s unsupported type %s", funcName, m.fld.Name, m.fld.Type.Name()))
 	}
 }

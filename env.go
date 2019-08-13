@@ -7,22 +7,15 @@ import (
 )
 
 // loadEnv loads config values from the environment
-func (m *myConfig) loadEnv() {
-	v := reflect.ValueOf(m.c)
-	if v.Kind() != reflect.Ptr {
-		return
-	}
-
+func (m *localData) loadEnv() {
+	v := reflect.ValueOf(m.userStruct)
 	e := v.Elem()
 	t := e.Type()
-	if t.Kind() != reflect.Struct {
-		return
-	}
 
 	for i := 0; i < t.NumField(); i++ {
-		m.f = t.Field(i)
-		if !m.testEnv(m.f.Name) {
-			nn := strings.Split(strings.ToUpper(m.f.Tag.Get("env")), ",")
+		m.fld = t.Field(i)
+		if !m.testEnv(m.fld.Name) {
+			nn := strings.Split(m.fld.Tag.Get("env"), ",")
 			for _, n := range nn {
 				if m.testEnv(n) {
 					break
@@ -33,7 +26,7 @@ func (m *myConfig) loadEnv() {
 }
 
 // testEnv tests for an environment variable, and if found sets the field's value
-func (m *myConfig) testEnv(n string) bool {
+func (m *localData) testEnv(n string) bool {
 	if v, ok := os.LookupEnv(n); ok {
 		m.setValue(v)
 		return true

@@ -3,7 +3,6 @@ package igconfig
 import (
 	"flag"
 	"fmt"
-	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -12,34 +11,29 @@ import (
 )
 
 // loadCmdline loads config values from the command line
-func (m *myConfig) loadCmdline() {
-	const funcName = "loadCmdline"
-
-	v := reflect.ValueOf(m.c)
-	if v.Kind() != reflect.Ptr {
-		return
+func (m *localData) loadCmdline(args []string) error {
+	if len(args) == 0 {
+		return nil
 	}
 
+	v := reflect.ValueOf(m.userStruct)
 	e := v.Elem()
 	t := e.Type()
-	if t.Kind() != reflect.Struct {
-		return
-	}
 
 	flags := flag.FlagSet{Usage: func() {}}
 
 	for i := 0; i < t.NumField(); i++ {
-		f := t.Field(i)
+		m.fld = t.Field(i)
 		var nn []string
 
-		if tag, ok := f.Tag.Lookup("cmd"); ok {
+		if tag, ok := m.fld.Tag.Lookup("cmd"); ok {
 			nn = strings.Split(tag, ",")
 		}
 
 		for _, n := range nn {
-			val := e.FieldByName(f.Name)
+			val := e.FieldByName(m.fld.Name)
 
-			switch f.Type.Kind() {
+			switch m.fld.Type.Kind() {
 			case reflect.Bool:
 				flags.Bool(n, val.Bool(), "")
 			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
@@ -54,22 +48,22 @@ func (m *myConfig) loadCmdline() {
 		}
 	}
 
-	if err := flags.Parse(os.Args[1:]); err != nil {
-		m.warnings = append(m.warnings, fmt.Sprintf("%s could not parse command-line parameters: %s", funcName, err.Error()))
+	if err := flags.Parse(args); err != nil {
+		return fmt.Errorf("loadCmdline error parsing parameters: %s", err.Error())
 	}
 
 	for i := 0; i < t.NumField(); i++ {
-		m.f = t.Field(i)
-		val := e.FieldByName(m.f.Name)
+		m.fld = t.Field(i)
+		val := e.FieldByName(m.fld.Name)
 
 		var nn []string
 		var newVal string
 
-		if tag, ok := m.f.Tag.Lookup("cmd"); ok {
+		if tag, ok := m.fld.Tag.Lookup("cmd"); ok {
 			nn = strings.Split(tag, ",")
 		}
 
-		if n := strings.ToLower(m.f.Name); !igstrings.SliceContains(nn, n) {
+		if n := strings.ToLower(m.fld.Name); !igstrings.SliceContains(nn, n) {
 			nn = append(nn, n)
 		}
 
@@ -78,7 +72,7 @@ func (m *myConfig) loadCmdline() {
 
 			if flg != nil {
 				v := flg.Value.String()
-				switch m.f.Type.Kind() {
+				switch m.fld.Type.Kind() {
 				case reflect.Bool:
 					b := isTrue(v)
 					if b != val.Bool() {
@@ -115,4 +109,6 @@ func (m *myConfig) loadCmdline() {
 			m.setValue(newVal)
 		}
 	}
+
+	return nil
 }
