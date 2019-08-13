@@ -3,6 +3,7 @@ package igconfig
 import (
 	"io/ioutil"
 	"os"
+	"reflect"
 	"testing"
 )
 
@@ -18,7 +19,7 @@ func TestFileBadData(t *testing.T) {
 	defer os.Remove(fileName)
 
 	var c testConfig
-	data := localData{userStruct: &c, fileName: fileName}
+	data := localData{userStruct: reflect.ValueOf(&c).Elem(), fileName: fileName}
 	data.loadDefaults()
 
 	if data.loadFile() != nil {
@@ -41,7 +42,7 @@ func TestFileOverwriteDefault(t *testing.T) {
 	defer os.Remove(fileName)
 
 	var c testConfig
-	data := localData{userStruct: &c, fileName: fileName}
+	data := localData{userStruct: reflect.ValueOf(&c).Elem(), fileName: fileName}
 	data.loadDefaults()
 
 	if data.loadFile() != nil {
@@ -68,7 +69,7 @@ func TestFileSimple(t *testing.T) {
 	defer os.Remove(fileName)
 
 	var c testConfig
-	data := localData{userStruct: &c, fileName: fileName}
+	data := localData{userStruct: reflect.ValueOf(&c).Elem(), fileName: fileName}
 	data.loadDefaults()
 
 	if data.loadFile() != nil {
@@ -110,7 +111,7 @@ func TestFileComplex(t *testing.T) {
 	defer os.Remove(fileName)
 
 	var c testConfig
-	data := localData{userStruct: &c, fileName: fileName}
+	data := localData{userStruct: reflect.ValueOf(&c).Elem(), fileName: fileName}
 	data.loadDefaults()
 
 	if data.loadFile() != nil {

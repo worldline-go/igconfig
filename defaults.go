@@ -1,18 +1,13 @@
 package igconfig
 
-import (
-	"reflect"
-)
-
 // loadDefaults loads the config struct fields with their default value as defined in the tags
 func (m *localData) loadDefaults() {
-	v := reflect.ValueOf(m.userStruct)
-	t := v.Elem().Type()
+	t := m.userStruct.Type()
 
 	for i := 0; i < t.NumField(); i++ {
-		m.fld = t.Field(i)
-		if v, ok := m.fld.Tag.Lookup("default"); ok {
-			m.setValue(v)
+		field := t.Field(i)
+		if v, ok := field.Tag.Lookup("default"); ok {
+			m.setValue(field.Name, v)
 		}
 	}
 }

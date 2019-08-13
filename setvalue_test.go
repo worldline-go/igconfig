@@ -34,39 +34,47 @@ func TestIsTrue(t *testing.T) {
 func TestSetValueWarnings(t *testing.T) {
 	var c testConfig
 
-	data := localData{userStruct: &c}
+	data := localData{userStruct: reflect.ValueOf(&c).Elem()}
 
-	v := reflect.ValueOf(data.userStruct)
-	e := v.Elem()
-	tp := e.Type()
-
-	data.fld, _ = tp.FieldByName("Age")
-	data.setValue("haha")
-	if data.messages == nil {
-		t.Errorf("TestSetValue failed to test for uint parsing error")
-	} else {
-		data.messages = nil
+	tests := []struct {
+		Field string
+		SetTo string
+	}{
+		{
+			Field: "Age",
+			SetTo: "haha",
+		},
+		{
+			Field: "Port",
+			SetTo: "haha",
+		},
+		{
+			Field: "Salary",
+			SetTo: "haha",
+		},
+		{
+			Field: "Unsused",
+			SetTo: "1.0",
+		},
 	}
 
-	data.fld, _ = tp.FieldByName("Port")
-	data.setValue("haha")
-	if data.messages == nil {
-		t.Errorf("TestSetValue failed to test for int parsing error")
-	} else {
-		data.messages = nil
+	for _, test := range tests {
+		data.setValue(test.Field, test.SetTo)
+		if data.messages == nil {
+			t.Errorf("TestSetValue failed for field '%s'", test.Field)
+		}
 	}
+}
 
-	data.fld, _ = tp.FieldByName("Salary")
-	data.setValue("haha")
+func TestSetStruct(t *testing.T) {
+	testStruct := struct {
+		Field struct {
+			Test bool
+		} `cmd:"struct"`
+	}{}
+	data := localData{userStruct: reflect.ValueOf(&testStruct).Elem()}
+	data.setValue("Field", `{"test":false}`)
 	if data.messages == nil {
-		t.Errorf("TestSetValue failed to test for float parsing error")
-	} else {
-		data.messages = nil
-	}
-
-	data.fld, _ = tp.FieldByName("Unused")
-	data.setValue("1.0")
-	if data.messages == nil {
-		t.Errorf("TestSetValue failed to test for unsupported type")
+		t.Fail()
 	}
 }

@@ -10,10 +10,9 @@ import (
 
 // localData contains local variables during config processing
 type localData struct {
-	userStruct interface{}
+	userStruct reflect.Value
 	fileName   string
 	messages   []string
-	fld        reflect.StructField
 }
 
 // testConfigParm tests if the supplied parameter is a valid pointer to a struct
@@ -46,7 +45,7 @@ func LoadConfigDefaults(c interface{}) error {
 		return fmt.Errorf("%s %s", funcName, err.Error())
 	}
 
-	data := localData{userStruct: c}
+	data := localData{userStruct: reflect.ValueOf(c).Elem()}
 	data.loadDefaults()
 
 	return data.checkWarnings(funcName)
@@ -60,7 +59,7 @@ func LoadConfigFile(c interface{}, file string) error {
 		return fmt.Errorf("%s %s", funcName, err.Error())
 	}
 
-	data := localData{userStruct: c, fileName: file}
+	data := localData{userStruct: reflect.ValueOf(c).Elem(), fileName: file}
 	if err := data.loadFile(); err != nil {
 		return err
 	}
@@ -76,7 +75,7 @@ func LoadConfigEnv(c interface{}) error {
 		return fmt.Errorf("%s %s", funcName, err.Error())
 	}
 
-	data := localData{userStruct: c}
+	data := localData{userStruct: reflect.ValueOf(c).Elem()}
 	data.loadEnv()
 	return data.checkWarnings(funcName)
 }
@@ -89,7 +88,7 @@ func LoadConfigCmdline(c interface{}) error {
 		return fmt.Errorf("%s %s", funcName, err.Error())
 	}
 
-	data := localData{userStruct: c}
+	data := localData{userStruct: reflect.ValueOf(c).Elem()}
 	if err := data.loadCmdline(os.Args[1:]); err != nil {
 		return err
 	}
@@ -107,7 +106,7 @@ func LoadConfig(c interface{}, file string, env, cmd bool) error {
 		return fmt.Errorf("%s %s", funcName, err.Error())
 	}
 
-	data := localData{userStruct: c, fileName: file}
+	data := localData{userStruct: reflect.ValueOf(c).Elem(), fileName: file}
 
 	// if defaults fail there's an error in the struct so we return immediately
 	data.loadDefaults()

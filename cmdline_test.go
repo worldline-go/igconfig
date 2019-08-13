@@ -1,6 +1,7 @@
 package igconfig
 
 import (
+	"reflect"
 	"testing"
 )
 
@@ -10,9 +11,8 @@ func TestCmdlineValues(t *testing.T) {
 	args := []string{"-t", "-n", "Piet", "--port", "1234", "--hostname=bol.com", "--age", "25", "--salary", "1500.00"}
 
 	var c testConfig
-	data := localData{userStruct: &c}
+	data := localData{userStruct: reflect.ValueOf(&c).Elem()}
 
-	data.loadDefaults()
 	err := data.loadCmdline(args)
 	if err != nil {
 		t.Errorf("%s failed: %s", funcName, err.Error())

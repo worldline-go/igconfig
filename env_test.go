@@ -2,6 +2,7 @@ package igconfig
 
 import (
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -20,7 +21,7 @@ func TestEnvValues(t *testing.T) {
 	}
 
 	var c testConfig
-	data := localData{userStruct: &c}
+	data := localData{userStruct: reflect.ValueOf(&c).Elem()}
 	data.loadDefaults()
 
 	data.loadEnv()

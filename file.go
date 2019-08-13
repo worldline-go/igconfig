@@ -3,14 +3,12 @@ package igconfig
 import (
 	"bufio"
 	"os"
-	"reflect"
 	"strings"
 )
 
 // loadFile loads config values from a fileName
 func (m *localData) loadFile() error {
-	v := reflect.ValueOf(m.userStruct)
-	t := v.Elem().Type()
+	t := m.userStruct.Type()
 
 	f, err := os.Open(m.fileName)
 	if err != nil {
@@ -37,16 +35,16 @@ func (m *localData) loadFile() error {
 			v := strings.TrimSpace(s[i+1:])
 
 			for i := 0; i < t.NumField(); i++ {
-				m.fld = t.Field(i)
-				if strings.EqualFold(m.fld.Name, k) {
-					m.setValue(v)
+				field := t.Field(i)
+				if strings.EqualFold(field.Name, k) {
+					m.setValue(field.Name, v)
 					break
 				}
 
-				nn := strings.Split(strings.ToUpper(m.fld.Tag.Get("cfg")), ",")
+				nn := strings.Split(strings.ToUpper(field.Tag.Get("cfg")), ",")
 				for _, n := range nn {
 					if n == k {
-						m.setValue(v)
+						m.setValue(field.Name, v)
 						break
 					}
 				}

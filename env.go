@@ -8,16 +8,14 @@ import (
 
 // loadEnv loads config values from the environment
 func (m *localData) loadEnv() {
-	v := reflect.ValueOf(m.userStruct)
-	e := v.Elem()
-	t := e.Type()
+	t := m.userStruct.Type()
 
 	for i := 0; i < t.NumField(); i++ {
-		m.fld = t.Field(i)
-		if !m.testEnv(m.fld.Name) {
-			nn := strings.Split(m.fld.Tag.Get("env"), ",")
+		field := t.Field(i)
+		if !m.testEnv(field.Name, m.userStruct.FieldByName(field.Name), field.Name) {
+			nn := strings.Split(field.Tag.Get("env"), ",")
 			for _, n := range nn {
-				if m.testEnv(n) {
+				if m.testEnv(field.Name, m.userStruct.FieldByName(field.Name), n) {
 					break
 				}
 			}
@@ -26,17 +24,17 @@ func (m *localData) loadEnv() {
 }
 
 // testEnv tests for an environment variable, and if found sets the field's value
-func (m *localData) testEnv(n string) bool {
+func (m *localData) testEnv(fieldName string, val reflect.Value, n string) bool {
 	if v, ok := os.LookupEnv(n); ok {
-		m.setValue(v)
+		m.setValue(fieldName, v)
 		return true
 	}
 	if v, ok := os.LookupEnv(strings.ToUpper(n)); ok {
-		m.setValue(v)
+		m.setValue(fieldName, v)
 		return true
 	}
 	if v, ok := os.LookupEnv(strings.ToLower(n)); ok {
-		m.setValue(v)
+		m.setValue(fieldName, v)
 		return true
 	}
 	return false
