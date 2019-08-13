@@ -1,52 +1,60 @@
 package igconfig
 
 import (
-	"io/ioutil"
-	"os"
+	"bytes"
 	"reflect"
 	"testing"
 )
 
 func TestFileBadData(t *testing.T) {
-	const funcName = "TestFileBadData"
-	const fileName = "/tmp/TestFileBadData.cfg"
-	const fileData = "age=haha"
-
-	if err := ioutil.WriteFile(fileName, []byte(fileData), 0644); err != nil {
-		t.Errorf("%s could not write temporary fileName '%s'", funcName, fileName)
-		return
+	var (
+		buf      bytes.Buffer
+		funcName = "TestFileBadData"
+	)
+	tests := []struct {
+		FileData   string
+		ShouldFail bool
+	}{
+		{
+			FileData:   "age=haha",
+			ShouldFail: true,
+		},
+		{
+			FileData:   "age",
+			ShouldFail: false,
+		},
 	}
-	defer os.Remove(fileName)
 
 	var c testConfig
-	data := localData{userStruct: reflect.ValueOf(&c).Elem(), fileName: fileName}
-	data.loadDefaults()
+	data := localData{userStruct: reflect.ValueOf(&c).Elem()}
 
-	if data.loadFile() != nil {
-		t.Errorf("%s failed to read configuration fileName '%s'", funcName, fileName)
-	}
-	if len(data.messages) == 0 {
-		t.Errorf("%s failed to check for parsing error", funcName)
+	for _, test := range tests {
+		buf.WriteString(test.FileData)
+		if data.loadReader(&buf) != nil {
+			t.Errorf("%s failed to read configuration", funcName)
+		}
+		if test.ShouldFail && len(data.messages) == 0 {
+			t.Errorf("%s failed to check for parsing error", funcName)
+		}
+		data.messages = nil
+		buf.Reset()
 	}
 }
 
 func TestFileOverwriteDefault(t *testing.T) {
-	const funcName = "TestFileOverwriteDefault"
-	const fileName = "/tmp/TestFileBadData.cfg"
-	const fileData = "Name="
-
-	if err := ioutil.WriteFile(fileName, []byte(fileData), 0644); err != nil {
-		t.Errorf("%s could not write temporary fileName '%s'", funcName, fileName)
-		return
-	}
-	defer os.Remove(fileName)
+	var (
+		buf      bytes.Buffer
+		funcName = "TestFileOverwriteDefault"
+		fileData = "Name="
+	)
+	buf.WriteString(fileData)
 
 	var c testConfig
-	data := localData{userStruct: reflect.ValueOf(&c).Elem(), fileName: fileName}
+	data := localData{userStruct: reflect.ValueOf(&c).Elem()}
 	data.loadDefaults()
 
-	if data.loadFile() != nil {
-		t.Errorf("%s failed to read configuration fileName '%s'", funcName, fileName)
+	if data.loadReader(&buf) != nil {
+		t.Errorf("%s failed to read configuration", funcName)
 	}
 	if len(data.messages) != 0 {
 		t.Errorf("%s got parsing error(s)", funcName)
@@ -58,22 +66,19 @@ func TestFileOverwriteDefault(t *testing.T) {
 }
 
 func TestFileSimple(t *testing.T) {
-	const funcName = "TestFileSimple"
-	const fileName = "/tmp/TestFileSimple.cfg"
-	const fileData = "age=28\nsalary=1800.00\nNAME=Jantje"
-
-	if err := ioutil.WriteFile(fileName, []byte(fileData), 0644); err != nil {
-		t.Errorf("%s could not write temporary fileName '%s'", funcName, fileName)
-		return
-	}
-	defer os.Remove(fileName)
+	var (
+		buf      bytes.Buffer
+		funcName = "TestFileSimple"
+		fileData = "age=28\nsalary=1800.00\nNAME=Jantje"
+	)
+	buf.WriteString(fileData)
 
 	var c testConfig
-	data := localData{userStruct: reflect.ValueOf(&c).Elem(), fileName: fileName}
+	data := localData{userStruct: reflect.ValueOf(&c).Elem()}
 	data.loadDefaults()
 
-	if data.loadFile() != nil {
-		t.Errorf("%s could not load config fileName '%s'", funcName, fileName)
+	if data.loadReader(&buf) != nil {
+		t.Errorf("%s could not load config", funcName)
 	}
 	if len(data.messages) != 0 {
 		t.Errorf("%s got parsing error(s)", funcName)
@@ -100,22 +105,19 @@ func TestFileSimple(t *testing.T) {
 }
 
 func TestFileComplex(t *testing.T) {
-	const funcName = "TestFileComplex"
-	const fileName = "/tmp/TestFileComplex.cfg"
-	const fileData = "// Age\nage=28\n#Salary\nsalary=1800.00\n\nsettle_name=Jantje\n ## Name of subject ##\n\n\n"
-
-	if ioutil.WriteFile(fileName, []byte(fileData), 0644) != nil {
-		t.Errorf("%s could not write temporary fileName '%s'", funcName, fileName)
-		return
-	}
-	defer os.Remove(fileName)
+	var (
+		buf      bytes.Buffer
+		funcName = "TestFileComplex"
+		fileData = "// Age\nage=28\n#Salary\nsalary=1800.00\n\nsettle_name=Jantje\n ## Name of subject ##\n\n\n"
+	)
+	buf.WriteString(fileData)
 
 	var c testConfig
-	data := localData{userStruct: reflect.ValueOf(&c).Elem(), fileName: fileName}
+	data := localData{userStruct: reflect.ValueOf(&c).Elem()}
 	data.loadDefaults()
 
-	if data.loadFile() != nil {
-		t.Errorf("%s could not load config fileName '%s'", funcName, fileName)
+	if data.loadReader(&buf) != nil {
+		t.Errorf("%s could not load config", funcName)
 	}
 	if len(data.messages) != 0 {
 		t.Errorf("%s got parsing error(s)", funcName)

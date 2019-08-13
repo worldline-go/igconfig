@@ -11,7 +11,6 @@ import (
 // localData contains local variables during config processing
 type localData struct {
 	userStruct reflect.Value
-	fileName   string
 	messages   []string
 }
 
@@ -59,8 +58,8 @@ func LoadConfigFile(c interface{}, file string) error {
 		return fmt.Errorf("%s %s", funcName, err.Error())
 	}
 
-	data := localData{userStruct: reflect.ValueOf(c).Elem(), fileName: file}
-	if err := data.loadFile(); err != nil {
+	data := localData{userStruct: reflect.ValueOf(c).Elem()}
+	if err := data.loadFile(file); err != nil {
 		return err
 	}
 
@@ -106,7 +105,7 @@ func LoadConfig(c interface{}, file string, env, cmd bool) error {
 		return fmt.Errorf("%s %s", funcName, err.Error())
 	}
 
-	data := localData{userStruct: reflect.ValueOf(c).Elem(), fileName: file}
+	data := localData{userStruct: reflect.ValueOf(c).Elem()}
 
 	// if defaults fail there's an error in the struct so we return immediately
 	data.loadDefaults()
@@ -118,7 +117,7 @@ func LoadConfig(c interface{}, file string, env, cmd bool) error {
 	// not have to keep trying after the first fail
 	var err error
 	if file != "" {
-		err = data.loadFile()
+		err = data.loadFile(file)
 	}
 
 	if env {
