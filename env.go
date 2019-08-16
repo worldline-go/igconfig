@@ -13,7 +13,7 @@ func (m *localData) loadEnv() {
 		field := t.Field(i)
 		tags := field.Tag.Get("env")
 		if tags == "" {
-			m.testEnv(field.Name, strings.ToUpper(field.Name))
+			m.testEnv(field.Name, field.Name)
 			continue
 		}
 		nn := strings.Split(tags, ",")
