@@ -2,7 +2,6 @@ package igconfig
 
 import (
 	"bytes"
-	"reflect"
 	"testing"
 )
 
@@ -26,7 +25,10 @@ func TestFileBadData(t *testing.T) {
 	}
 
 	var c testConfig
-	data := localData{userStruct: reflect.ValueOf(&c).Elem()}
+	data, err := newLocalData(&c)
+	if err != nil {
+		t.Fatalf("%s: should not fail: %s", funcName, err.Error())
+	}
 
 	for _, test := range tests {
 		buf.WriteString(test.FileData)
@@ -45,12 +47,15 @@ func TestFileOverwriteDefault(t *testing.T) {
 	var (
 		buf      bytes.Buffer
 		funcName = "TestFileOverwriteDefault"
-		fileData = "Name="
+		fileData = "settle_name="
 	)
 	buf.WriteString(fileData)
 
 	var c testConfig
-	data := localData{userStruct: reflect.ValueOf(&c).Elem()}
+	data, err := newLocalData(&c)
+	if err != nil {
+		t.Fatalf("%s: should not fail: %s", funcName, err.Error())
+	}
 	data.loadDefaults()
 
 	if data.loadReader(&buf) != nil {
@@ -69,12 +74,15 @@ func TestFileSimple(t *testing.T) {
 	var (
 		buf      bytes.Buffer
 		funcName = "TestFileSimple"
-		fileData = "age=28\nsalary=1800.00\nNAME=Jantje"
+		fileData = "age=28\nsalary=1800.00\nsettle_name=Jantje"
 	)
 	buf.WriteString(fileData)
 
 	var c testConfig
-	data := localData{userStruct: reflect.ValueOf(&c).Elem()}
+	data, err := newLocalData(&c)
+	if err != nil {
+		t.Fatalf("%s: should not fail: %s", funcName, err.Error())
+	}
 	data.loadDefaults()
 
 	if data.loadReader(&buf) != nil {
@@ -108,12 +116,15 @@ func TestFileComplex(t *testing.T) {
 	var (
 		buf      bytes.Buffer
 		funcName = "TestFileComplex"
-		fileData = "// Age\nage=28\n#Salary\nsalary=1800.00\n\nsettle_name=Jantje\n ## Name of subject ##\n\n\n"
+		fileData = "// Age\nage=28\n#Salary\nsalary=1800.00\n\nsettle_name=Jantje\n ## Name of subject ##\nwrong=test\n\n"
 	)
 	buf.WriteString(fileData)
 
 	var c testConfig
-	data := localData{userStruct: reflect.ValueOf(&c).Elem()}
+	data, err := newLocalData(&c)
+	if err != nil {
+		t.Fatalf("%s: should not fail: %s", funcName, err.Error())
+	}
 	data.loadDefaults()
 
 	if data.loadReader(&buf) != nil {

@@ -20,6 +20,20 @@ func (m *localData) loadFile(fileName string) error {
 func (m *localData) loadReader(r io.Reader) error {
 	t := m.userStruct.Type()
 
+	tagToFieldName := make(map[string]string)
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		tags := field.Tag.Get("cfg")
+		if tags == "" {
+			tagToFieldName[strings.ToUpper(field.Name)] = field.Name
+			continue
+		}
+		nn := strings.Split(strings.ToUpper(tags), ",")
+		for _, n := range nn {
+			tagToFieldName[n] = field.Name
+		}
+	}
+
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		s := scanner.Text()
@@ -35,22 +49,12 @@ func (m *localData) loadReader(r io.Reader) error {
 		}
 		k := strings.ToUpper(strings.TrimSpace(s[:i]))
 		v := strings.TrimSpace(s[i+1:])
+		fieldName, ok := tagToFieldName[k]
 
-		for i := 0; i < t.NumField(); i++ {
-			field := t.Field(i)
-			if strings.EqualFold(field.Name, k) {
-				m.setValue(field.Name, v)
-				break
-			}
-			nn := strings.Split(strings.ToUpper(field.Tag.Get("cfg")), ",")
-			for _, n := range nn {
-				if n == k {
-					m.setValue(field.Name, v)
-					break
-				}
-			}
+		if !ok {
+			continue
 		}
+		m.setValue(fieldName, v)
 	}
-
 	return scanner.Err()
 }

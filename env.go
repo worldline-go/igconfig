@@ -11,12 +11,15 @@ func (m *localData) loadEnv() {
 
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
-		if !m.testEnv(field.Name, field.Name) {
-			nn := strings.Split(field.Tag.Get("env"), ",")
-			for _, n := range nn {
-				if m.testEnv(field.Name, n) {
-					break
-				}
+		tags := field.Tag.Get("env")
+		if tags == "" {
+			m.testEnv(field.Name, strings.ToUpper(field.Name))
+			continue
+		}
+		nn := strings.Split(tags, ",")
+		for _, n := range nn {
+			if m.testEnv(field.Name, n) {
+				break
 			}
 		}
 	}

@@ -2,7 +2,6 @@ package igconfig
 
 import (
 	"os"
-	"reflect"
 	"strings"
 	"testing"
 )
@@ -13,15 +12,21 @@ func TestEnvValues(t *testing.T) {
 	if err := os.Setenv("HOSTNAME", "127.0.0.1"); err != nil {
 		t.Errorf("%s could not set environment variable 'HOSTNAME'", funcName)
 	}
-	if err := os.Setenv("Port", "12345"); err != nil {
+	if err := os.Setenv("port", "12345"); err != nil {
 		t.Errorf("%s could not set environment variable 'Port'", funcName)
 	}
 	if err := os.Setenv("age", "44"); err != nil {
 		t.Errorf("%s could not set environment variable 'age'", funcName)
 	}
+	if err := os.Setenv("address", "should_not_be_set"); err != nil {
+		t.Errorf("%s could not set environment variable 'address'", funcName)
+	}
 
 	var c testConfig
-	data := localData{userStruct: reflect.ValueOf(&c).Elem()}
+	data, err := newLocalData(&c)
+	if err != nil {
+		t.Fatalf("%s: should not fail: %s", funcName, err.Error())
+	}
 	data.loadDefaults()
 
 	data.loadEnv()

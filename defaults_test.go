@@ -1,7 +1,6 @@
 package igconfig
 
 import (
-	"reflect"
 	"testing"
 )
 
@@ -10,7 +9,10 @@ func TestDefaultsValues(t *testing.T) {
 	const localhost = "localhost"
 
 	var c testConfig
-	data := localData{userStruct: reflect.ValueOf(&c).Elem()}
+	data, err := newLocalData(&c)
+	if err != nil {
+		t.Fatalf("%s: should not fail: %s", funcName, err.Error())
+	}
 
 	data.loadDefaults()
 

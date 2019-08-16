@@ -1,7 +1,6 @@
 package igconfig
 
 import (
-	"reflect"
 	"testing"
 )
 
@@ -34,7 +33,10 @@ func TestIsTrue(t *testing.T) {
 func TestSetValueWarnings(t *testing.T) {
 	var c testConfig
 
-	data := localData{userStruct: reflect.ValueOf(&c).Elem()}
+	data, err := newLocalData(&c)
+	if err != nil {
+		t.Fatalf("%s: should not fail: %s", "TestSetValueWarnings", err.Error())
+	}
 
 	tests := []struct {
 		Field string
@@ -61,7 +63,7 @@ func TestSetValueWarnings(t *testing.T) {
 	for _, test := range tests {
 		data.setValue(test.Field, test.SetTo)
 		if data.messages == nil {
-			t.Errorf("TestSetValue failed for field '%s'", test.Field)
+			t.Errorf("TestSetValueWarnings failed for field '%s'", test.Field)
 		}
 	}
 }
@@ -72,7 +74,10 @@ func TestSetStruct(t *testing.T) {
 			Test bool
 		} `cmd:"struct"`
 	}{}
-	data := localData{userStruct: reflect.ValueOf(&testStruct).Elem()}
+	data, err := newLocalData(&testStruct)
+	if err != nil {
+		t.Fatalf("%s: should not fail: %s", "TestSetStruct", err.Error())
+	}
 	data.setValue("Field", `{"test":false}`)
 	if data.messages == nil {
 		t.Fail()

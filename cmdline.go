@@ -20,10 +20,9 @@ func (m *localData) loadCmdline(args []string) error {
 
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
-		var nn []string
-
-		if tag, ok := field.Tag.Lookup("cmd"); ok {
-			nn = strings.Split(tag, ",")
+		nn := []string{strings.ToLower(field.Name)}
+		if field.Tag.Get("cmd") != "" {
+			nn = strings.Split(field.Tag.Get("cmd"), ",")
 		}
 
 		for _, n := range nn {

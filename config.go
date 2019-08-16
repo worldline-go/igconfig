@@ -14,18 +14,19 @@ type localData struct {
 	messages   []string
 }
 
-// testConfigParm tests if the supplied parameter is a valid pointer to a struct
-func testConfigParm(c interface{}) error {
+// newLocalData tests if the supplied parameter is a valid pointer to a struct and returns localData
+func newLocalData(c interface{}) (localData, error) {
+	data := localData{}
 	v := reflect.ValueOf(c)
 	if v.Kind() != reflect.Ptr {
-		return errors.New("input parameter not a pointer")
+		return data, errors.New("input parameter not a pointer")
 	}
 
 	if v.Elem().Type().Kind() != reflect.Struct {
-		return errors.New("input parameter not a struct")
+		return data, errors.New("input parameter not a struct")
 	}
-
-	return nil
+	data.userStruct = v.Elem()
+	return data, nil
 }
 
 // checkWarnings tests if messages were found and returns with an appropriate error
@@ -40,13 +41,12 @@ func (m *localData) checkWarnings(funcName string) error {
 func LoadConfigDefaults(c interface{}) error {
 	const funcName = "LoadConfigDefaults"
 
-	if err := testConfigParm(c); err != nil {
+	data, err := newLocalData(c)
+	if err != nil {
 		return fmt.Errorf("%s %s", funcName, err.Error())
 	}
 
-	data := localData{userStruct: reflect.ValueOf(c).Elem()}
 	data.loadDefaults()
-
 	return data.checkWarnings(funcName)
 }
 
@@ -54,11 +54,10 @@ func LoadConfigDefaults(c interface{}) error {
 func LoadConfigFile(c interface{}, file string) error {
 	const funcName = "LoadConfigFile"
 
-	if err := testConfigParm(c); err != nil {
+	data, err := newLocalData(c)
+	if err != nil {
 		return fmt.Errorf("%s %s", funcName, err.Error())
 	}
-
-	data := localData{userStruct: reflect.ValueOf(c).Elem()}
 	if err := data.loadFile(file); err != nil {
 		return err
 	}
@@ -70,11 +69,10 @@ func LoadConfigFile(c interface{}, file string) error {
 func LoadConfigEnv(c interface{}) error {
 	const funcName = "LoadConfigEnv"
 
-	if err := testConfigParm(c); err != nil {
+	data, err := newLocalData(c)
+	if err != nil {
 		return fmt.Errorf("%s %s", funcName, err.Error())
 	}
-
-	data := localData{userStruct: reflect.ValueOf(c).Elem()}
 	data.loadEnv()
 	return data.checkWarnings(funcName)
 }
@@ -83,11 +81,10 @@ func LoadConfigEnv(c interface{}) error {
 func LoadConfigCmdline(c interface{}) error {
 	const funcName = "LoadConfigCmdline"
 
-	if err := testConfigParm(c); err != nil {
+	data, err := newLocalData(c)
+	if err != nil {
 		return fmt.Errorf("%s %s", funcName, err.Error())
 	}
-
-	data := localData{userStruct: reflect.ValueOf(c).Elem()}
 	if err := data.loadCmdline(os.Args[1:]); err != nil {
 		return err
 	}
@@ -101,12 +98,10 @@ func LoadConfigCmdline(c interface{}) error {
 func LoadConfig(c interface{}, file string, env, cmd bool) error {
 	const funcName = "LoadConfig"
 
-	if err := testConfigParm(c); err != nil {
+	data, err := newLocalData(c)
+	if err != nil {
 		return fmt.Errorf("%s %s", funcName, err.Error())
 	}
-
-	data := localData{userStruct: reflect.ValueOf(c).Elem()}
-
 	// if defaults fail there's an error in the struct so we return immediately
 	data.loadDefaults()
 	if data.messages != nil {
@@ -115,7 +110,6 @@ func LoadConfig(c interface{}, file string, env, cmd bool) error {
 
 	// all other "user" inputs should be checked and all messages reported, so the user can fix everything and
 	// not have to keep trying after the first fail
-	var err error
 	if file != "" {
 		err = data.loadFile(file)
 	}

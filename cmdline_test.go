@@ -1,19 +1,20 @@
 package igconfig
 
 import (
-	"reflect"
 	"testing"
 )
 
 func TestCmdlineValues(t *testing.T) {
 	const funcName = "TestCmdlineValues"
 
-	args := []string{"-t", "-n", "Piet", "--port", "1234", "--hostname=bol.com", "--age", "25", "--salary", "1500.00"}
+	args := []string{"-t", "-n", "Piet", "--port", "1234", "--hostname=bol.com", "--address=example.com", "--age", "25", "--salary", "1500.00"}
 
 	var c testConfig
-	data := localData{userStruct: reflect.ValueOf(&c).Elem()}
-
-	err := data.loadCmdline(args)
+	data, err := newLocalData(&c)
+	if err != nil {
+		t.Fatalf("%s: should not fail: %s", funcName, err.Error())
+	}
+	err = data.loadCmdline(args)
 	if err != nil {
 		t.Errorf("%s failed: %s", funcName, err.Error())
 	}
@@ -29,6 +30,9 @@ func TestCmdlineValues(t *testing.T) {
 	}
 	if c.Host != "bol.com" {
 		t.Errorf("%s host mismatch; got: %s; want: %s", funcName, c.Host, "bol.com")
+	}
+	if c.Address != "example.com" {
+		t.Errorf("%s address mismatch; got: %s; want: %s", funcName, c.Address, "example.com")
 	}
 	if c.Port != 1234 {
 		t.Errorf("%s port mismatch; got: %d; want: %d", funcName, c.Port, 1234)
