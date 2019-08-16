@@ -22,10 +22,10 @@ func TestIsTrue(t *testing.T) {
 		{"0", false},
 	}
 
-	for _, testcase := range testcases {
+	for i, testcase := range testcases {
 		g := isTrue(testcase.c)
 		if g != testcase.w {
-			t.Errorf("TestIsTrue failed; got=%t; want=%t", g, testcase.w)
+			t.Errorf("TestIsTrue test #%d failed; got=%t; want=%t", i, g, testcase.w)
 		}
 	}
 }
@@ -60,10 +60,10 @@ func TestSetValueWarnings(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
+	for i, test := range tests {
 		data.setValue(test.Field, test.SetTo)
 		if data.messages == nil {
-			t.Errorf("TestSetValueWarnings failed for field '%s'", test.Field)
+			t.Errorf("TestSetValueWarnings test #%d failed for field '%s'", i, test.Field)
 		}
 	}
 }

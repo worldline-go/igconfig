@@ -30,13 +30,16 @@ func TestFileBadData(t *testing.T) {
 		t.Fatalf("%s: should not fail: %s", funcName, err.Error())
 	}
 
-	for _, test := range tests {
+	for i, test := range tests {
 		buf.WriteString(test.FileData)
 		if data.loadReader(&buf) != nil {
 			t.Errorf("%s failed to read configuration", funcName)
 		}
 		if test.ShouldFail && len(data.messages) == 0 {
-			t.Errorf("%s failed to check for parsing error", funcName)
+			t.Errorf("%s, test #%d should fail", funcName, i)
+		}
+		if !test.ShouldFail && len(data.messages) != 0 {
+			t.Errorf("%s, test #%d should not fail", funcName, i)
 		}
 		data.messages = nil
 		buf.Reset()
