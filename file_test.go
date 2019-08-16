@@ -101,7 +101,7 @@ func TestFileSimple(t *testing.T) {
 func TestFileComplex(t *testing.T) {
 	const funcName = "TestFileComplex"
 	const fileName = "/tmp/TestFileComplex.cfg"
-	const fileData = "// Age\nage=28\n#Salary\nsalary=1800.00  //it's ok ! \n\nsettle_name=Jantje ## Name of subject ##\n\n\n"
+	const fileData = "// Age\nage=28\n#Salary\nsalary=1800.00\n\nsettle_name=Jantje\n ## Name of subject ##\n\n\n"
 
 	if ioutil.WriteFile(fileName, []byte(fileData), 0644) != nil {
 		t.Errorf("%s could not write temporary fileName '%s'", funcName, fileName)

@@ -26,13 +26,11 @@ func (m *localData) loadFile() error {
 	for scanner.Scan() {
 		s := scanner.Text()
 
-		if i := strings.Index(s, "//"); i >= 0 {
-			s = s[:i]
-		}
-		if i := strings.Index(s, "#"); i >= 0 {
-			s = s[:i]
-		}
 		s = strings.TrimSpace(s)
+
+		if s == "" || strings.HasPrefix(s, "//") || strings.HasPrefix(s, "#") {
+			continue
+		}
 
 		if i := strings.Index(s, "="); i > 0 {
 			k := strings.ToUpper(strings.TrimSpace(s[:i]))
