@@ -1,7 +1,6 @@
 package igconfig
 
 import (
-	"reflect"
 	"testing"
 )
 
@@ -23,10 +22,10 @@ func TestIsTrue(t *testing.T) {
 		{"0", false},
 	}
 
-	for _, testcase := range testcases {
+	for i, testcase := range testcases {
 		g := isTrue(testcase.c)
 		if g != testcase.w {
-			t.Errorf("TestIsTrue failed; got=%t; want=%t", g, testcase.w)
+			t.Errorf("TestIsTrue test #%d failed; got=%t; want=%t", i, g, testcase.w)
 		}
 	}
 }
@@ -34,39 +33,53 @@ func TestIsTrue(t *testing.T) {
 func TestSetValueWarnings(t *testing.T) {
 	var c testConfig
 
-	data := localData{userStruct: &c}
-
-	v := reflect.ValueOf(data.userStruct)
-	e := v.Elem()
-	tp := e.Type()
-
-	data.fld, _ = tp.FieldByName("Age")
-	data.setValue("haha")
-	if data.messages == nil {
-		t.Errorf("TestSetValue failed to test for uint parsing error")
-	} else {
-		data.messages = nil
+	data, err := newLocalData(&c)
+	if err != nil {
+		t.Fatalf("%s: should not fail: %s", "TestSetValueWarnings", err.Error())
 	}
 
-	data.fld, _ = tp.FieldByName("Port")
-	data.setValue("haha")
-	if data.messages == nil {
-		t.Errorf("TestSetValue failed to test for int parsing error")
-	} else {
-		data.messages = nil
+	tests := []struct {
+		Field string
+		SetTo string
+	}{
+		{
+			Field: "Age",
+			SetTo: "haha",
+		},
+		{
+			Field: "Port",
+			SetTo: "haha",
+		},
+		{
+			Field: "Salary",
+			SetTo: "haha",
+		},
+		{
+			Field: "Unsused",
+			SetTo: "1.0",
+		},
 	}
 
-	data.fld, _ = tp.FieldByName("Salary")
-	data.setValue("haha")
-	if data.messages == nil {
-		t.Errorf("TestSetValue failed to test for float parsing error")
-	} else {
-		data.messages = nil
+	for i, test := range tests {
+		data.setValue(test.Field, test.SetTo)
+		if data.messages == nil {
+			t.Errorf("TestSetValueWarnings test #%d failed for field '%s'", i, test.Field)
+		}
 	}
+}
 
-	data.fld, _ = tp.FieldByName("Unused")
-	data.setValue("1.0")
+func TestSetStruct(t *testing.T) {
+	testStruct := struct {
+		Field struct {
+			Test bool
+		} `cmd:"struct"`
+	}{}
+	data, err := newLocalData(&testStruct)
+	if err != nil {
+		t.Fatalf("%s: should not fail: %s", "TestSetStruct", err.Error())
+	}
+	data.setValue("Field", `{"test":false}`)
 	if data.messages == nil {
-		t.Errorf("TestSetValue failed to test for unsupported type")
+		t.Fail()
 	}
 }

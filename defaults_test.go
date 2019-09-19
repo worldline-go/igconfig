@@ -1,13 +1,18 @@
 package igconfig
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestDefaultsValues(t *testing.T) {
 	const funcName = "TestDefaultsValues"
 	const localhost = "localhost"
 
 	var c testConfig
-	data := localData{userStruct: &c}
+	data, err := newLocalData(&c)
+	if err != nil {
+		t.Fatalf("%s: should not fail: %s", funcName, err.Error())
+	}
 
 	data.loadDefaults()
 

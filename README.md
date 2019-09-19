@@ -7,17 +7,10 @@ igconfig package can be used to load configuration values from a configration fi
 environment variables and/or command-line parameters.
 
 ## Requirements
-This package requires the following packages:
-- igstrings
+This package does not require any external packages.
 
 ## Install
-
-Clone this repo.
-Install [GoLang] >= 1.12  (https://golang.org/doc/install).
-```
-cd <reponame>
-go build *.go
-```
+Add this package to `go.mod`
 
 ## Unit tests
 ```
