@@ -1,5 +1,6 @@
 [![pipeline status](https://gitlab.test.igdcs.com/finops/utils/basics/igconfig/badges/master/pipeline.svg)](https://gitlab.test.igdcs.com/finops/utils/basics/igconfig/commits/master)
 [![coverage report](https://gitlab.test.igdcs.com/finops/utils/basics/igconfig/badges/master/coverage.svg)](https://gitlab.test.igdcs.com/finops/utils/basics/igconfig/commits/master)
+[![Quality Gate Status](https://am2vm2329.test.igdcs.com/api/project_badges/measure?project=util%2Figconfig&metric=alert_status)](https://am2vm2329.test.igdcs.com/dashboard?id=util%2Figconfig)
 
 # igconfig package
 
