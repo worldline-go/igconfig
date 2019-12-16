@@ -15,6 +15,7 @@ func (m *localData) loadCmdline(args []string) error {
 
 	t := m.userStruct.Type()
 
+	// turn off regular error handling
 	flags := flag.FlagSet{Usage: func() {}}
 	argToFieldName := make(map[string]string)
 
