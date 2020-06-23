@@ -9,7 +9,14 @@ import (
 
 // isTrue compares a string to determine the boolean value
 func isTrue(substring string) bool {
-	return strings.Contains(";TRUE;T;.T.;YES;Y;1;JA;J;", ";"+strings.ToUpper(substring)+";")
+	res, _ := strconv.ParseBool(substring)
+
+	// if parsed to true - then no need to go further
+	if res {
+		return true
+	}
+
+	return res || strings.Contains(";T;.T.;YES;Y;JA;J;", ";"+strings.ToUpper(substring)+";")
 }
 
 // setValue sets a value in the config struct
@@ -25,35 +32,46 @@ func (m *localData) setValue(fieldName, v string) {
 		return
 	}
 
-	kindName := val.Type().String()
+	if err := setValue(fieldName, v, val); err != nil {
+		m.messages = append(m.messages, err.Error())
+	}
+}
 
-	switch val.Kind() {
+// setValue sets a value in the config struct
+func setValue(fieldName, v string, to reflect.Value) error {
+	const (
+		funcName = "setValue"
+		valueMsg = "%s: value for field %s not a valid %s"
+	)
+
+	kindName := to.Type().String()
+
+	switch to.Kind() {
 	case reflect.Bool:
-		val.SetBool(isTrue(v))
+		to.SetBool(isTrue(v))
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		n, err := strconv.ParseInt(v, 0, 64)
 		if err != nil {
-			m.messages = append(m.messages, fmt.Sprintf(valueMsg, funcName, fieldName, kindName))
-			return
+			return fmt.Errorf(valueMsg, funcName, fieldName, kindName)
 		}
-		val.SetInt(n)
+		to.SetInt(n)
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		n, err := strconv.ParseUint(v, 0, 64)
 		if err != nil {
-			m.messages = append(m.messages, fmt.Sprintf(valueMsg, funcName, fieldName, kindName))
-			return
+			return fmt.Errorf(valueMsg, funcName, fieldName, kindName)
 		}
-		val.SetUint(n)
+		to.SetUint(n)
 	case reflect.Float32, reflect.Float64:
 		n, err := strconv.ParseFloat(v, 64)
 		if err != nil {
-			m.messages = append(m.messages, fmt.Sprintf(valueMsg, funcName, fieldName, kindName))
-			return
+			return fmt.Errorf(valueMsg, funcName, fieldName, kindName)
 		}
-		val.SetFloat(n)
+		to.SetFloat(n)
 	case reflect.String:
-		val.SetString(v)
+		to.SetString(v)
 	default:
-		m.messages = append(m.messages, fmt.Sprintf("%s: field %s unsupported type %s", funcName, fieldName, kindName))
+		return fmt.Errorf("%s: field %s unsupported type %s", funcName, fieldName, kindName)
 	}
+
+	return nil
 }
