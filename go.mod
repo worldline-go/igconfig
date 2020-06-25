@@ -1,6 +1,6 @@
 module gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git
 
-go 1.12
+go 1.13
 
 require (
 	github.com/hashicorp/consul/api v1.5.0
