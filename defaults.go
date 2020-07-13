@@ -6,6 +6,12 @@ func (m *localData) loadDefaults() {
 
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
+
+		if m.userStruct.Field(i).IsValid() && !m.userStruct.Field(i).IsZero() {
+			// Value is already set, default should not update it
+			continue
+		}
+
 		if v, ok := field.Tag.Lookup("default"); ok {
 			m.setValue(field.Name, v)
 		}
