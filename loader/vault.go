@@ -21,6 +21,10 @@ var VaultSecretBasePath = "secret/data/"
 // They must not be application specific!
 var VaultSecretGenericPath = "generic"
 
+// VaultAppRoleBasePath is the base path for
+// app role authentication
+var VaultAppRoleBasePath = "auth/approle/login"
+
 // SkipStructTypes specifies types of structs that should be skipped from setting.
 var SkipStructTypes = map[reflect.Type]struct{}{
 	reflect.TypeOf(time.Time{}): {},
@@ -29,6 +33,15 @@ var SkipStructTypes = map[reflect.Type]struct{}{
 type Vaulter interface {
 	Read(path string) (*api.Secret, error)
 }
+
+type Vaulterer interface {
+	Load(name string, to interface{}) error
+	LoadGeneric(to interface{}) error
+	loadReflect(path string, refVal reflect.Value) error
+}
+
+// AuthOption options for authentication
+type AuthOption func(*api.Client) error
 
 // Vault loads secret values from Vault instance.
 //
@@ -64,6 +77,66 @@ func SimpleVaultLoad(addr, token, name string, to interface{}) error {
 	cl.SetToken(token)
 
 	return Vault{Client: cl.Logical()}.Load(name, to)
+}
+
+// NewVaulter returns the Vaulter interface. If role_id is given it will call SetTokenAppRole
+// to set the token
+//
+// Example usage:
+//
+//  var config Config // some Config struct
+//
+//  vaultLoader, NewVaulterer(addr, SetAppRole(roleID, ""))
+//  if err != nil { ... }
+//
+//  loader.VaultSecretBasePath = "some/path/"
+//
+//  err = vaultLoader.Load("adm0001s", &config)
+//  if err != nil { ... }
+func NewVaulterer(addr string, opts ...AuthOption) (loader Vaulterer, err error) {
+	cl, err := api.NewClient(&api.Config{Address: addr})
+	if err != nil {
+		return nil, err
+	}
+	// Loop through each option
+	for _, opt := range opts {
+		// Call the option giving the instantiated
+		if err = opt(cl); err != nil {
+			return nil, err
+		}
+	}
+
+	return Vault{Client: cl.Logical()}, err
+}
+
+// SetToken sets the token auth method
+// It does not do authentication here.
+func SetToken(token string) AuthOption {
+	return func(c *api.Client) error {
+		c.SetToken(token)
+		return nil
+	}
+}
+
+// SetAppRole sets the client token from the Approle auth Method
+// It does authenticate to fetch the token, then sets it.
+//
+// Vault can also be setup to authenticate with role_id only
+// for this the secret id can be passed as blank
+func SetAppRole(role, secret string) AuthOption {
+	return func(c *api.Client) error {
+		resp, err := c.Logical().Write(VaultAppRoleBasePath, map[string]interface{}{
+			"role_id":   role,
+			"secret_id": secret,
+		})
+		if err != nil {
+			return err
+		}
+
+		c.SetToken(resp.Auth.ClientToken)
+
+		return nil
+	}
 }
 
 // Load will load data from Vault to input struct 'to'.

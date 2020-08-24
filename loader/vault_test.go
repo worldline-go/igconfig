@@ -151,3 +151,47 @@ func (v VaultMock) Read(path string) (*api.Secret, error) {
 
 	return &secret, nil
 }
+
+func TestNewVaulterer_RoleID(t *testing.T) {
+	// This test requires for Vault to be running and token to be known
+	addr, roleID := os.Getenv("VAULT_HOST"), os.Getenv("ROLE_ID")
+
+	if addr == "" || roleID == "" {
+		t.Skip("vault address and role_id must be provided")
+	}
+
+	v, err := NewVaulterer(addr, SetAppRole(roleID, ""))
+	assert.NoError(t, err)
+
+	var s testStruct
+
+	require.NoError(t, v.Load("test", &s))
+	assert.Equal(t, testStruct{
+		Field1: "one",
+		Inner: inner{
+			Field2: "other",
+		},
+	}, s)
+}
+
+func TestNewVaulterer_Token(t *testing.T) {
+	// This test requires for Vault to be running and token to be known
+	addr, token := os.Getenv("VAULT_HOST"), os.Getenv("VAULT_TOKEN")
+
+	if addr == "" || token == "" {
+		t.Skip("vault address and token must be provided")
+	}
+
+	v, err := NewVaulterer(addr, SetToken(token))
+	assert.NoError(t, err)
+
+	var s testStruct
+
+	require.NoError(t, v.Load("test", &s))
+	assert.Equal(t, testStruct{
+		Field1: "one",
+		Inner: inner{
+			Field2: "other",
+		},
+	}, s)
+}
