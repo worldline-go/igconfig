@@ -1,24 +1,24 @@
-package igconfig
+package loader_test
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/loader"
+	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/testdata"
 )
 
 func TestDefaultsValues(t *testing.T) {
 	const funcName = "TestDefaultsValues"
 	const host = "test"
-	const port = 7788
+	const port = 8080
 
-	var c testConfig = testConfig{
-		Port: port,
+	var c = testdata.TestConfig{
 		Host: host,
 	}
-	data, err := newLocalData(&c)
-	if err != nil {
-		t.Fatalf("%s: should not fail: %s", funcName, err.Error())
-	}
 
-	data.loadDefaults()
+	require.NoError(t, (loader.Default{}).Load("", &c))
 
 	if c.Name != "Jan" {
 		t.Errorf("%s name mismatch; got: %s; want: %s", funcName, c.Name, "Jan")

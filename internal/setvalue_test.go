@@ -1,7 +1,12 @@
-package igconfig
+package internal
 
 import (
+	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/testdata"
 )
 
 func TestIsTrue(t *testing.T) {
@@ -13,8 +18,6 @@ func TestIsTrue(t *testing.T) {
 		{"true", true},
 		{"T", true},
 		{"t", true},
-		{".t.", true},
-		{"YeS", true},
 		{"1", true},
 		{"FALSE", false},
 		{"treu", false},
@@ -31,40 +34,33 @@ func TestIsTrue(t *testing.T) {
 }
 
 func TestSetValueWarnings(t *testing.T) {
-	var c testConfig
-
-	data, err := newLocalData(&c)
-	if err != nil {
-		t.Fatalf("%s: should not fail: %s", "TestSetValueWarnings", err.Error())
-	}
+	var c testdata.TestConfig
 
 	tests := []struct {
 		Field string
-		SetTo string
+		Val   string
 	}{
 		{
 			Field: "Age",
-			SetTo: "haha",
+			Val:   "haha",
 		},
 		{
 			Field: "Port",
-			SetTo: "haha",
+			Val:   "haha",
 		},
 		{
 			Field: "Salary",
-			SetTo: "haha",
+			Val:   "haha",
 		},
 		{
 			Field: "Unsused",
-			SetTo: "1.0",
+			Val:   "1.0",
 		},
 	}
 
 	for i, test := range tests {
-		data.setValue(test.Field, test.SetTo)
-		if data.messages == nil {
-			t.Errorf("TestSetValueWarnings test #%d failed for field '%s'", i, test.Field)
-		}
+		refVal, _ := GetReflectElem(&c)
+		assert.NotNil(t, SetStructFieldValue(test.Field, test.Val, refVal), fmt.Sprintf("test #%d", i))
 	}
 }
 
@@ -74,12 +70,7 @@ func TestSetStruct(t *testing.T) {
 			Test bool
 		} `cmd:"struct"`
 	}{}
-	data, err := newLocalData(&testStruct)
-	if err != nil {
-		t.Fatalf("%s: should not fail: %s", "TestSetStruct", err.Error())
-	}
-	data.setValue("Field", `{"test":false}`)
-	if data.messages == nil {
-		t.Fail()
-	}
+
+	refVal, _ := GetReflectElem(&testStruct)
+	assert.NotNil(t, SetStructFieldValue("Field", `{"test":false`, refVal))
 }

@@ -2,19 +2,28 @@ package loader
 
 import (
 	"fmt"
+	"os"
+	"path"
 	"reflect"
 	"strings"
 	"time"
 
 	"github.com/hashicorp/vault/api"
 	"github.com/rs/zerolog/log"
+
+	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/internal"
 )
 
 var VaultSecretTag = "secret"
 
+// VaultRoleIDEnv specifies the name of environment a variable that holds Vault role id to authenticate with.
+const VaultRoleIDEnv = "VAULT_ROLE_ID"
+
+// VaultRoleSecretEnv specifies the name of environment a variable that holds Vault role secret.
+const VaultRoleSecretEnv = "VAULT_ROLE_SECRET" // nolint:gosec // false-positive
+
 // VaultSecretBasePath is the base path for secrets.
-// This path MUST always end with trailing slash!
-var VaultSecretBasePath = "secret/data/"
+var VaultSecretBasePath = "finops/data"
 
 // VaultSecretGenericPath is path for storing generic secrets.
 // Such generic secrets might be re-used by any number of applications.
@@ -22,7 +31,7 @@ var VaultSecretBasePath = "secret/data/"
 var VaultSecretGenericPath = "generic"
 
 // VaultAppRoleBasePath is the base path for
-// app role authentication
+// app role authentication.
 var VaultAppRoleBasePath = "auth/approle/login"
 
 // SkipStructTypes specifies types of structs that should be skipped from setting.
@@ -34,13 +43,7 @@ type Vaulter interface {
 	Read(path string) (*api.Secret, error)
 }
 
-type Vaulterer interface {
-	Load(name string, to interface{}) error
-	LoadGeneric(to interface{}) error
-	loadReflect(path string, refVal reflect.Value) error
-}
-
-// AuthOption options for authentication
+// AuthOption options for authentication.
 type AuthOption func(*api.Client) error
 
 // Vault loads secret values from Vault instance.
@@ -68,15 +71,57 @@ type Vault struct {
 	ErrOnUnsetable bool
 }
 
-func SimpleVaultLoad(addr, token, name string, to interface{}) error {
+func NewVaulter(addr, token string) (Vaulter, error) {
 	cl, err := api.NewClient(&api.Config{Address: addr})
+	if err == nil {
+		cl.SetToken(token)
+	}
+
+	if cl == nil {
+		return nil, ErrNoClient
+	}
+
+	return cl.Logical(), err
+}
+
+// NewVaulterFromEnv creates default Vault client.
+//
+// If VaultRoleIDEnv environment variable is set - also logs in based on role_id and role_secret.
+func NewVaulterFromEnv() (Vaulter, error) {
+	vault, err := api.NewClient(api.DefaultConfig())
+	if err != nil || vault == nil {
+		return nil, err
+	}
+
+	roleID, roleSecret := os.Getenv(VaultRoleIDEnv), os.Getenv(VaultRoleSecretEnv)
+	// Check only roleID as roleSecret can be empty in some cases.
+	if roleID != "" {
+		// Unset previous token to prevent any problems.
+		vault.ClearToken()
+
+		if err := SetAppRole(roleID, roleSecret)(vault); err != nil {
+			return nil, err
+		}
+	}
+
+	return NewVaulterFromClient(vault)
+}
+
+func NewVaulterFromClient(cl *api.Client) (Vaulter, error) {
+	if cl == nil {
+		return nil, ErrNoClient
+	}
+
+	return cl.Logical(), nil
+}
+
+func SimpleVaultLoad(addr, token, name string, to interface{}) error {
+	cl, err := NewVaulter(addr, token)
 	if err != nil {
 		return err
 	}
 
-	cl.SetToken(token)
-
-	return Vault{Client: cl.Logical()}.Load(name, to)
+	return Vault{Client: cl}.Load(name, to)
 }
 
 // NewVaulter returns the Vaulter interface. If role_id is given it will call SetTokenAppRole
@@ -93,7 +138,7 @@ func SimpleVaultLoad(addr, token, name string, to interface{}) error {
 //
 //  err = vaultLoader.Load("adm0001s", &config)
 //  if err != nil { ... }
-func NewVaulterer(addr string, opts ...AuthOption) (loader Vaulterer, err error) {
+func NewVaulterer(addr string, opts ...AuthOption) (loader Loader, err error) {
 	cl, err := api.NewClient(&api.Config{Address: addr})
 	if err != nil {
 		return nil, err
@@ -122,7 +167,7 @@ func SetToken(token string) AuthOption {
 // It does authenticate to fetch the token, then sets it.
 //
 // Vault can also be setup to authenticate with role_id only
-// for this the secret id can be passed as blank
+// for this the secret id can be passed as blank.
 func SetAppRole(role, secret string) AuthOption {
 	return func(c *api.Client) error {
 		resp, err := c.Logical().Write(VaultAppRoleBasePath, map[string]interface{}{
@@ -143,25 +188,84 @@ func SetAppRole(role, secret string) AuthOption {
 // 'name' is base secret path, or just name of application.
 // Path will be constructed as "${VaultSecretTag}/${name}".
 // By default VaultSecretTag value is "secrets/data", which allows to load secrets from root.
-func (v Vault) Load(name string, to interface{}) error {
-	refVal := reflect.Indirect(reflect.ValueOf(to))
+func (v Vault) Load(appName string, to interface{}) error {
+	refVal, err := internal.GetReflectElem(to)
+	if err != nil {
+		return err
+	}
 
-	return v.loadReflect(VaultSecretBasePath+name, refVal)
+	if err := v.LoadGeneric(to); err != nil {
+		return err
+	}
+
+	return v.LoadReflect(getVaultSecretPath(appName), refVal)
 }
 
 // LoadGeneric loads generic(shared) secrets from Vault.
 func (v Vault) LoadGeneric(to interface{}) error {
 	refVal := reflect.Indirect(reflect.ValueOf(to))
 
-	return v.loadReflect(VaultSecretBasePath+VaultSecretGenericPath, refVal)
+	return v.LoadReflect(getVaultSecretPath(VaultSecretGenericPath), refVal)
 }
 
-// loadReflect loads data from secret storage to refVal.
+// LoadReflect loads data from secret storage to refVal.
 // It also works for inner structs.
-func (v Vault) loadReflect(path string, refVal reflect.Value) error {
-	pathSecret, err := v.Client.Read(path)
+func (v Vault) LoadReflect(appName string, refVal reflect.Value) error {
+	secretMap, err := v.loadSecretData(appName)
 	if err != nil {
-		return fmt.Errorf("vault request for path %q failed: %w", path, err)
+		return err
+	}
+
+	t := refVal.Type()
+
+	for i := 0; i < t.NumField(); i++ {
+		fieldVal, fieldTyp := refVal.Field(i), t.Field(i)
+
+		if !fieldVal.CanSet() {
+			if v.ErrOnUnsetable {
+				return fmt.Errorf("cannot set field field: %q", fieldTyp.Name)
+			}
+
+			log.Warn().Str("field", fieldTyp.Name).Msg("cannot set field")
+
+			continue
+		}
+
+		tags := internal.TagValue(fieldTyp, VaultSecretTag)
+		if len(tags) == 0 {
+			continue
+		}
+
+		tag := tags[0]
+
+		if fieldTyp.Type.Kind() == reflect.Struct {
+			if _, ok := SkipStructTypes[fieldTyp.Type]; ok {
+				continue
+			}
+
+			if err := v.LoadReflect(appName+"/"+strings.ToLower(tag), fieldVal); err != nil {
+				return fmt.Errorf("inner struct %q error: %w", fieldVal.Type().Name(), err)
+			}
+
+			continue
+		}
+
+		if err := setFieldValue(secretMap[tag], fieldTyp.Name, fieldVal); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (v Vault) loadSecretData(appName string) (map[string]interface{}, error) {
+	if err := v.EnsureClient(); err != nil {
+		return nil, err
+	}
+
+	pathSecret, err := v.Client.Read(appName)
+	if err != nil {
+		return nil, fmt.Errorf("vault request for path %q failed: %w", appName, err)
 	}
 
 	if pathSecret == nil || pathSecret.Data == nil {
@@ -177,51 +281,35 @@ func (v Vault) loadReflect(path string, refVal reflect.Value) error {
 	// Empty assign is so this part will not panic if conversion was unsuccessful.
 	secretMap, _ := pathSecret.Data["data"].(map[string]interface{})
 	if secretMap == nil {
-		return fmt.Errorf("secret from path %q cannot be converted to map", path)
+		return nil, fmt.Errorf("secret from path %q cannot be converted to map", appName)
 	}
 
-	t := refVal.Type()
+	return secretMap, nil
+}
 
-	for i := 0; i < t.NumField(); i++ {
-		fieldVal, fieldTyp := refVal.Field(i), t.Field(i)
+// EnsureClient creates and sets a Vault client if needed.
+func (v *Vault) EnsureClient() error {
+	if v.Client == nil {
+		var err error
 
-		if !fieldVal.CanSet() {
-			if v.ErrOnUnsetable {
-				return fmt.Errorf("cannot set field field: %q", fieldTyp.Name)
-			}
-
-			log.Warn().Str("field", fieldTyp.Name).Msg("cannot set field")
-			continue
-		}
-
-		tag := fieldTyp.Tag.Get(VaultSecretTag)
-		switch tag {
-		case "-":
-			continue
-		case "":
-			tag = strings.ToLower(fieldTyp.Name)
-		}
-
-		if fieldTyp.Type.Kind() == reflect.Struct {
-			if _, ok := SkipStructTypes[fieldTyp.Type]; ok {
-				continue
-			}
-
-			if err := v.loadReflect(path+"/"+strings.ToLower(tag), fieldVal); err != nil {
-				return fmt.Errorf("inner struct %q error: %w", fieldVal.Type().Name(), err)
-			}
-			continue
-		}
-
-		if err := setFieldValue(secretMap[tag], fieldTyp.Name, fieldVal); err != nil {
+		v.Client, err = NewVaulterFromEnv()
+		if err != nil {
 			return err
 		}
+	}
+
+	if v.Client == nil {
+		return ErrNoClient
 	}
 
 	return nil
 }
 
-// setFieldValue sets value for reflect field
+func getVaultSecretPath(parts ...string) string {
+	return path.Join(append([]string{VaultSecretBasePath}, parts...)...)
+}
+
+// setFieldValue sets value for reflect field.
 func setFieldValue(val interface{}, fieldTypName string, fieldVal reflect.Value) error {
 	if val == nil {
 		return nil
@@ -232,5 +320,5 @@ func setFieldValue(val interface{}, fieldTypName string, fieldVal reflect.Value)
 		strVal = fmt.Sprint(val)
 	}
 
-	return setValue(fieldTypName, strVal, fieldVal)
+	return internal.SetReflectValue(fieldTypName, strVal, fieldVal)
 }

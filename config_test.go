@@ -1,147 +1,90 @@
-package igconfig
+package igconfig_test
 
 import (
-	"io/ioutil"
+	"fmt"
+	"log"
 	"os"
 	"testing"
+
+	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/loader"
+
+	"github.com/rs/zerolog"
+
+	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2"
+
+	"github.com/stretchr/testify/assert"
+
+	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/testdata"
 )
 
-type testConfig struct {
-	Name    string  `cfg:"settle_name"    env:"name"           cmd:"name,n"           default:"Jan"`
-	Age     uint    `cfg:"age"            env:"age"            cmd:"age,a"            default:"18"`
-	Salary  float64 `cfg:"salary"         env:"salary"         cmd:"salary,s"         default:"2000.00"  loggable:"false"`
-	Host    string  `cfg:"host,hostname"  env:"host,hostname"  cmd:"host,hostname,h"  default:"localhost"`
-	Address string  `cfg:"ADDRESS"        env:"ADDRESS"        default:"localhost"`
-	Port    int     `cfg:"port"           env:"port"           cmd:"port,p"           default:"8080"`
-	Secure  bool    `cfg:"secure,ssl,tls" env:"secure,ssl,tls" cmd:"secure,ssl,tls,t" default:"false"    loggable:"false"`
-	Unused  []string
+func ExampleLoadConfig() {
+	var config testdata.TestConfig
+
+	// Disable logging for unreachable local services.
+	// In non-local environments this should not be done.
+	zerolog.SetGlobalLevel(zerolog.ErrorLevel)
+
+	// Below are just an examples of how values can be provided. You don't need to do this in your code.
+	// In real-world - this will be provided from env, flags or Consul/Vault
+	os.Args = []string{"executable", "-name", "FromFlags"}
+	_ = os.Setenv("PORT", "5647")
+
+	if err := igconfig.LoadConfig("adm0001s", &config); err != nil {
+		log.Fatalf("load configuration: %s", err.Error())
+	}
+
+	fmt.Println(config.Host) // This value is set from default
+	fmt.Println(config.Name) // This value is set from application flags
+	fmt.Println(config.Port) // This value is set from environmental variable
+
+	// Output:
+	// localhost
+	// FromFlags
+	// 5647
+
 }
 
-type badDefaults struct {
-	Age    uint    `cfg:"age"            env:"age"            cmd:"age,a"            default:"haha"`
-	Salary float64 `cfg:"salary"         env:"salary"         cmd:"salary,s"         default:"haha"`
-	Port   int     `cfg:"port"           env:"port"           cmd:"port,p"           default:"haha"`
-}
-
-func TestNewLocalData(t *testing.T) {
-	i := 0
-
-	if _, err := newLocalData(i); err == nil {
-		t.Error("failed to test for invalid input parameter (not pointer)")
-	}
-	if _, err := newLocalData(&i); err == nil {
-		t.Error("failed to test for invalid input parameter (not struct)")
+func ExampleLoadWithLoaders() {
+	// If only particular loaders are needed or new loader should be added - it is possible to do.
+	//
+	// igconfig.DefaultLoaders is an array of loaders provided by default.
+	//
+	// This example uses only Flags loader.
+	// This means that no default or environmental variables will be loaded.
+	//
+	// Some loaders may accept additional configuration when used like this
+	flagsLoader := loader.Flags{
+		NoUsage: true,
 	}
 
-	if err := LoadConfigDefaults(i); err == nil {
-		t.Error("failed to test LoadConfigDefaults")
-	}
-	if err := LoadConfigFile(i, "haha"); err == nil {
-		t.Error("failed to test LoadConfigFile")
-	}
-	if err := LoadConfigEnv(i); err == nil {
-		t.Error("failed to test LoadConfigEnv")
-	}
-	if err := LoadConfigCmdline(i); err == nil {
-		t.Error("failed to test LoadConfigCmdline")
-	}
-	if err := LoadConfig(i, "haha", true, true); err == nil {
-		t.Error("failed to test LoadConfig")
-	}
-}
+	// Prepare pre-defined list of flags for this example
+	os.Args = []string{"executable", "-salary", "12345.66"}
 
-func TestLoadConfigDefaults(t *testing.T) {
-	c1 := badDefaults{}
-	if LoadConfigDefaults(&c1) == nil {
-		t.Error("failed to test for bad defaults")
-	}
+	var c testdata.TestConfig
 
-	c2 := testConfig{}
-	if LoadConfigDefaults(&c2) != nil {
-		t.Error("failed to load good defaults")
-	}
-}
+	// igconfig.LoadWithLoaders provides ability to use specific loaders.
+	//
+	// P.S.: Please check errors in your code.
+	_ = igconfig.LoadWithLoaders("adm0001s", &c, flagsLoader)
 
-func TestLoadConfigFile(t *testing.T) {
-	var c testConfig
-	if LoadConfigFile(&c, "/this/is/not/a/file") == nil {
-		t.Error("failed to test for invalid file name")
-	}
+	fmt.Println(c.Name)
+	fmt.Println(c.Salary)
 
-	if LoadConfigFile(&c, "/dev/null") != nil {
-		t.Error("failed to load fileName /dev/null")
-	}
-
-	const fileName = "/tmp/TestFileBadData.cfg"
-	const fileData = "age=haha"
-
-	if err := ioutil.WriteFile(fileName, []byte(fileData), 0644); err != nil {
-		t.Errorf("could not write temporary fileName '%s'", fileName)
-		return
-	}
-	defer os.Remove(fileName)
-
-	if LoadConfigFile(&c, fileName) == nil {
-		t.Error("failed to check for parsing errors")
-	}
-}
-
-func TestLoadConfigEnv(t *testing.T) {
-	var c testConfig
-	if LoadConfigEnv(&c) != nil {
-		t.Error("failed to load environment")
-	}
-
-	if os.Setenv("port", "haha") != nil {
-		t.Error("could not set environment variable 'Port'")
-	}
-
-	if LoadConfigEnv(&c) == nil {
-		t.Error("failed to test for parsing error")
-	}
-
-	if os.Unsetenv("port") != nil {
-		t.Error("could not unset environment variable 'Port'")
-	}
-}
-
-func TestLoadConfigCmdline(t *testing.T) {
-	var c testConfig
-
-	os.Args = []string{"program"}
-	if LoadConfigCmdline(&c) != nil {
-		t.Error("failed to load command-line parameters")
-	}
-
-	os.Args = []string{"program", "--age", "haha"}
-	if LoadConfigCmdline(&c) == nil {
-		t.Error("failed to test for parsing error")
-	}
-
-	os.Args = []string{"program"}
+	// Output:
+	//
+	// 12345.66
 }
 
 func TestLoadConfig(t *testing.T) {
-	c1 := badDefaults{}
-	if LoadConfig(&c1, "haha", true, true) == nil {
-		t.Error("failed to check for bad defaults")
-	}
+	c1 := testdata.BadDefaults{}
 
-	var c2 testConfig
-	if LoadConfig(&c2, "/this/is/not/a/file", true, true) == nil {
-		t.Error("failed to check for bad fileName")
-	}
+	assert.NotNil(t, igconfig.LoadConfig("haha", &c1))
 
-	if LoadConfig(&c2, "/dev/null", true, true) != nil {
-		t.Error("failed to load configuration")
-	}
+	var c2 testdata.TestConfig
 
+	prevArgs := os.Args
 	os.Args = []string{"program", "--age", "haha", "--salary", "nothing"}
 
-	c2 = testConfig{}
-	if LoadConfig(&c2, "", true, true) == nil {
-		t.Error("failed to check for parsing errors")
-	}
-
-	os.Args = []string{"program"}
+	assert.NotNil(t, igconfig.LoadConfig("", &c2))
+	os.Args = prevArgs
 }

@@ -2,6 +2,7 @@ package igconfig
 
 import (
 	"encoding"
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
@@ -31,7 +32,10 @@ type Printer struct {
 	// NameGetter will be called for each field to get name of it.
 	NameGetter
 	// Value is actual struct that should be printed.
-	// It is possible for the value to be pointer to a struct
+	// It is possible for the value to be pointer to a struct.
+	//
+	// Value can implement some zerolog interfaces, but it has to be of proper type:
+	// if interface is defined on pointer receiver - passed value should also be pointer.
 	Value interface{}
 }
 
@@ -41,6 +45,11 @@ type Printer struct {
 func (p Printer) MarshalZerologObject(ev *zerolog.Event) {
 	e, ok := p.validateInput()
 	if !ok {
+		return
+	}
+
+	if marshaler, ok := p.Value.(zerolog.LogObjectMarshaler); ok {
+		ev.EmbedObject(marshaler)
 		return
 	}
 
@@ -115,30 +124,49 @@ func (p Printer) logTyped(ev *zerolog.Event, name string, elem reflect.Value) *z
 // If some interface method will return error - field name will have form of 'error_<field_name>'
 // (where <field_name> will be returned from NameGetter) and error will be the value.
 func (p Printer) printInterfacePrinter(ev *zerolog.Event, name string, elem reflect.Value) bool {
+	// Print null if pointer is nil.
+	// There is great chance to get panic with interface that don't handle nil receiver.
+	if !elem.IsValid() || (elem.Kind() == reflect.Ptr && elem.IsNil()) {
+		// Maybe this will be changed in the future, but currently let's be verbose about nil pointers.
+		ev.Interface(name, nil)
+		return true
+	}
+
 	interfaceValue := elem.Interface()
 
-	if textMarshaler, ok := interfaceValue.(encoding.TextMarshaler); ok {
-		txt, err := textMarshaler.MarshalText()
+	switch v := interfaceValue.(type) {
+	case zerolog.LogObjectMarshaler:
+		ev.Object(name, v)
+	case zerolog.LogArrayMarshaler:
+		ev.Array(name, v)
+	case json.Marshaler:
+		jsn, err := v.MarshalJSON()
 		if err != nil {
-			ev = ev.Str("error_"+name, ""+err.Error())
+			ev.AnErr("error_"+name, err)
 			return true
 		}
 
-		ev = ev.Str(name, string(txt))
-		return true
+		ev.RawJSON(name, jsn)
+	case encoding.TextMarshaler:
+		txt, err := v.MarshalText()
+		if err != nil {
+			ev.AnErr("error_"+name, err)
+			return true
+		}
+
+		ev.Bytes(name, txt)
+	case fmt.Stringer:
+		ev.Stringer(name, v)
+	default:
+		return false
 	}
 
-	if stringer, ok := interfaceValue.(fmt.Stringer); ok {
-		ev = ev.Stringer(name, stringer)
-		return true
-	}
-
-	return false
+	return true
 }
 
 // validateInput checks that Printer input value is valid.
 //
-// Valid means that it is a struct or non-nil pointer to a struct
+// Valid means that it is a struct or non-nil pointer to a struct.
 func (p Printer) validateInput() (reflect.Value, bool) {
 	if p.Value == nil {
 		return reflect.Value{}, false

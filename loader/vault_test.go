@@ -6,9 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/hashicorp/vault/api"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -109,7 +108,7 @@ func TestVault_LoadGeneric(t *testing.T) {
 
 func TestSimpleVaultLoad(t *testing.T) {
 	// This test requires for Vault to be running and token to be known
-	addr, token := os.Getenv("VAULT_HOST"), os.Getenv("VAULT_TOKEN")
+	addr, token := os.Getenv(api.EnvVaultAddress), os.Getenv(api.EnvVaultToken)
 
 	if addr == "" || token == "" {
 		t.Skip("vault address and token must be provided")
@@ -136,7 +135,7 @@ func (v VaultMock) Read(path string) (*api.Secret, error) {
 		return nil, v.err
 	}
 
-	path = strings.TrimPrefix(path, VaultSecretBasePath)
+	path = strings.TrimPrefix(strings.TrimPrefix(path, VaultSecretBasePath), "/")
 
 	data := v.data[path]
 	if data == nil {

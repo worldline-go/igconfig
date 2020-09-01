@@ -16,6 +16,7 @@ type small struct {
 	String       string
 	unexported   string
 	timeField    time.Time
+	Zerolog      *zerologMarshaler
 	NonPrintable string `loggable:"false"`
 }
 type withTimeFields struct {
@@ -35,6 +36,14 @@ type withMarshaler struct {
 	Marshaled TestError
 }
 
+type zerologMarshaler struct {
+	Int int
+}
+
+func (z *zerologMarshaler) MarshalZerologObject(e *zerolog.Event) {
+	e.Int("super_cool_field", z.Int)
+}
+
 type TestError string
 
 func TestPrinter_MarshalZerologObject(t *testing.T) {
@@ -51,7 +60,7 @@ func TestPrinter_MarshalZerologObject(t *testing.T) {
 		{
 			Name:   "small",
 			Value:  small{Int1: 3, String: "str", unexported: "test"},
-			Result: `{"int1":3,"string":"str"}`,
+			Result: `{"int1":3,"string":"str","zerolog":null}`,
 		},
 		{
 			Name:   "with time",
@@ -61,17 +70,17 @@ func TestPrinter_MarshalZerologObject(t *testing.T) {
 		{
 			Name:   "nil inner struct",
 			Value:  innerStruct{First: small{String: "inner_string"}},
-			Result: `{"first":{"int1":0,"string":"inner_string"},"second":null}`,
+			Result: `{"first":{"int1":0,"string":"inner_string","zerolog":null},"second":null}`,
 		},
 		{
 			Name:   "inner struct",
 			Value:  innerStruct{First: small{String: "inner_string"}, Second: &small{String: "second"}},
-			Result: `{"first":{"int1":0,"string":"inner_string"},"second":{"int1":0,"string":"second"}}`,
+			Result: `{"first":{"int1":0,"string":"inner_string","zerolog":null},"second":{"int1":0,"string":"second","zerolog":null}}`,
 		},
 		{
 			Name:   "pointer struct",
 			Value:  &small{String: "inner_string"},
-			Result: `{"int1":0,"string":"inner_string"}`,
+			Result: `{"int1":0,"string":"inner_string","zerolog":null}`,
 		},
 		{
 			Name:   "nil pointer struct",
@@ -92,6 +101,21 @@ func TestPrinter_MarshalZerologObject(t *testing.T) {
 			Name:   "with marshaler no error",
 			Value:  withMarshaler{},
 			Result: `{"marshaled":"valid"}`,
+		},
+		{
+			Name:   "zerolog Object marshaler",
+			Value:  &zerologMarshaler{Int: 6},
+			Result: `{"super_cool_field":6}`,
+		},
+		{
+			Name:   "zerolog do not implement Object marshaler",
+			Value:  zerologMarshaler{Int: 6},
+			Result: `{"int":6}`,
+		},
+		{
+			Name:   "small with zerolog marshable value",
+			Value:  small{Int1: 3, Zerolog: &zerologMarshaler{Int: 33}, unexported: "test"},
+			Result: `{"int1":3,"string":"","zerolog":{"super_cool_field":33}}`,
 		},
 	}
 
