@@ -19,7 +19,7 @@ import (
 )
 
 // ConsulConfigPathPrefix specifies prefix for key search.
-var ConsulConfigPathPrefix = "finops/config"
+var ConsulConfigPathPrefix = "finops"
 
 var ErrNoClient = errors.New("no client available")
 
