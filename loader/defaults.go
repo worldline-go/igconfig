@@ -26,14 +26,25 @@ func (d Default) ReflectLoad(_ string, to reflect.Value) error {
 	t := to.Type()
 
 	for i := 0; i < t.NumField(); i++ {
-		if to.Field(i).IsValid() && !to.Field(i).IsZero() {
-			// Value is already set, skip it.
+		toField := to.Field(i)
+		if (toField.IsValid() && !toField.IsZero()) || !toField.CanSet() {
+			// Value is already set or not settable at all, skip it.
 			continue
 		}
 
-		field := t.Field(i)
-		if v, ok := field.Tag.Lookup(DefaultTag); ok {
-			if err := internal.SetStructFieldValue(field.Name, v, to); err != nil {
+		typeField := t.Field(i)
+
+		// If it is a struct - try to set it's inner fields to.
+		if typeField.Type.Kind() == reflect.Struct {
+			if err := d.ReflectLoad("", toField); err != nil {
+				return err
+			}
+
+			continue
+		}
+
+		if v, ok := typeField.Tag.Lookup(DefaultTag); ok {
+			if err := internal.SetStructFieldValue(typeField.Name, v, to); err != nil {
 				return err
 			}
 		}
