@@ -9,30 +9,6 @@ import (
 	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/testdata"
 )
 
-func TestIsTrue(t *testing.T) {
-	testcases := []struct {
-		c string
-		w bool
-	}{
-		{"TRUE", true},
-		{"true", true},
-		{"T", true},
-		{"t", true},
-		{"1", true},
-		{"FALSE", false},
-		{"treu", false},
-		{"tru", false},
-		{"0", false},
-	}
-
-	for i, testcase := range testcases {
-		g := isTrue(testcase.c)
-		if g != testcase.w {
-			t.Errorf("TestIsTrue test #%d failed; got=%t; want=%t", i, g, testcase.w)
-		}
-	}
-}
-
 func TestSetValueWarnings(t *testing.T) {
 	var c testdata.TestConfig
 

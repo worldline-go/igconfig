@@ -1,0 +1,132 @@
+package internal
+
+import (
+	"reflect"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+)
+
+type smallInnerStruct struct {
+	C   int           `cfg:"c" env:"inner"`
+	Dur time.Duration `cfg:"dur"`
+}
+
+type structWithEverything struct {
+	A string            `cfg:"a"`
+	B smallInnerStruct  `cfg:"b" env:"struct"`
+	C *smallInnerStruct `cfg:"c"`
+	D int               `cfg:"d"`
+}
+
+func TestEnvFieldName(t *testing.T) {
+	tests := []struct {
+		name   string
+		outer  string
+		tag    string
+		result string
+	}{
+		{
+			name:   "simple field",
+			tag:    `cfg:"field"`,
+			result: "FIELD",
+		},
+		{
+			name:   "with comma",
+			tag:    `cfg:"long,l"`,
+			result: "LONG",
+		},
+		{
+			name:   "with base and long",
+			outer:  "test",
+			tag:    `cfg:"long,l"`,
+			result: "TEST_LONG",
+		},
+	}
+
+	for i := range tests {
+		test := tests[i]
+
+		t.Run(test.name, func(t *testing.T) {
+			result := EnvFieldName(test.outer, reflect.StructField{Tag: reflect.StructTag(test.tag)})
+			assert.Equal(t, test.result, result)
+		})
+	}
+}
+
+func TestStructIterator_Iterate(t *testing.T) {
+	tests := []struct {
+		Name     string
+		Iterator StructIterator
+		Result   interface{}
+		Error    string
+	}{
+		{
+			Name: "small normal env",
+			Iterator: StructIterator{
+				Value:         &structWithEverything{},
+				FieldNameFunc: EnvFieldName,
+				IteratorFunc: mapIterator(map[string]string{
+					"A": "1",
+				}),
+			},
+			Result: &structWithEverything{A: "1", C: &smallInnerStruct{}},
+		},
+		{
+			Name: "input is not pointer",
+			Iterator: StructIterator{
+				Value: structWithEverything{},
+			},
+			Error: ErrInputIsNotPointerOrStruct.Error(),
+		},
+		{
+			Name: "input is not struct",
+			Iterator: StructIterator{
+				Value: new(int),
+			},
+			Error: ErrInputIsNotPointerOrStruct.Error(),
+		},
+		{
+			Name: "env with inner struct",
+			Iterator: StructIterator{
+				Value:         &structWithEverything{},
+				FieldNameFunc: EnvFieldName,
+				IteratorFunc: mapIterator(map[string]string{
+					"A":            "1",
+					"STRUCT_INNER": "5",
+					"C_DUR":        "3s",
+				}),
+			},
+			Result: &structWithEverything{A: "1", B: smallInnerStruct{C: 5}, C: &smallInnerStruct{Dur: 3 * time.Second}},
+		},
+	}
+
+	for _, test := range tests {
+		test := test
+
+		t.Run(test.Name, func(t *testing.T) {
+			err := test.Iterator.Iterate()
+
+			if test.Error == "" {
+				assert.NoError(t, err)
+				assert.Equal(t, test.Result, test.Iterator.Value)
+			} else {
+				// Value is unusable in this case, no reason to check it.
+				assert.EqualError(t, err, test.Error)
+			}
+
+		})
+	}
+}
+
+func mapIterator(fieldMap map[string]string) IteratorFunc {
+	return func(fieldName string, field reflect.Value) error {
+		val, ok := fieldMap[fieldName]
+		if !ok {
+			return nil
+		}
+
+		return SetReflectValueString(fieldName, val, field)
+	}
+}

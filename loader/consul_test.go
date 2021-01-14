@@ -14,6 +14,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rs/zerolog"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/hashicorp/consul/api"
@@ -88,6 +90,7 @@ func TestConsul_DynamicValue(t *testing.T) {
 	var consulCalls = 5
 	var configPath = path.Join("app", "field")
 
+	zerolog.TimeFieldFormat = time.RFC3339Nano
 	consuler := ConsulMock{kvFunc: func(keyPath string) (*api.KVPair, *api.QueryMeta, bool) {
 		require.True(t, strings.HasPrefix(keyPath, configPath), "requested config path")
 
@@ -96,7 +99,7 @@ func TestConsul_DynamicValue(t *testing.T) {
 		if consulCalls > 6 {
 			// Simulate waiting for new value.
 			// Consul returns in two cases: when value is updated or on timeout.
-			time.Sleep(200 * time.Millisecond)
+			time.Sleep(201 * time.Millisecond)
 		}
 
 		return &api.KVPair{Key: keyPath, Value: []byte(strconv.Itoa(consulCalls / 5))},

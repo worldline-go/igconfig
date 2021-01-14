@@ -26,7 +26,6 @@ type StructWithInner struct {
 }
 
 func TestDefaultsValues(t *testing.T) {
-	const funcName = "TestDefaultsValues"
 	const host = "test"
 	const port = 8080
 
@@ -36,24 +35,19 @@ func TestDefaultsValues(t *testing.T) {
 
 	require.NoError(t, (loader.Default{}).Load("", &c))
 
-	if c.Name != "Jan" {
-		t.Errorf("%s name mismatch; got: %s; want: %s", funcName, c.Name, "Jan")
-	}
-	if c.Age != 18 {
-		t.Errorf("%s age mismatch; got: %d; want: %d", funcName, c.Age, 18)
-	}
-	if c.Salary != 2000.0 {
-		t.Errorf("%s salary mismatch; got: %.2f; want: %.2f", funcName, c.Salary, 2000.0)
-	}
-	if c.Host != host {
-		t.Errorf("%s host mismatch; got: %s; want: %s", funcName, c.Host, host)
-	}
-	if c.Port != port {
-		t.Errorf("%s port mismatch; got: %d; want: %d", funcName, c.Port, port)
-	}
-	if c.Secure != false {
-		t.Errorf("%s secure mismatch; got: %t; want: %t", funcName, c.Secure, false)
-	}
+	assert.Equal(t, testdata.TestConfig{
+		Name:    "Jan",
+		Age:     18,
+		Salary:  2000.0,
+		Host:    host,
+		Address: "localhost",
+		Port:    port,
+		Secure:  false,
+		InnerStruct: testdata.InnerStruct{
+			Str:  "val",
+			Time: testdata.ParsedTime,
+		},
+	}, c)
 }
 
 func TestDefault_WithInnerStruct(t *testing.T) {

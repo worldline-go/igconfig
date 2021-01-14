@@ -320,5 +320,5 @@ func setFieldValue(val interface{}, fieldTypName string, fieldVal reflect.Value)
 		strVal = fmt.Sprint(val)
 	}
 
-	return internal.SetReflectValue(fieldTypName, strVal, fieldVal)
+	return internal.SetReflectValueString(fieldTypName, strVal, fieldVal)
 }

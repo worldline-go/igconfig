@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"strings"
 
 	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/internal"
 )
@@ -32,51 +33,61 @@ func (f Flags) LoadSlice(to interface{}, args []string) error {
 		return nil
 	}
 
-	refVal, err := internal.GetReflectElem(to)
-	if err != nil {
-		return err
-	}
-
-	t := refVal.Type()
-
 	flags := flag.FlagSet{}
 
 	if f.NoUsage {
 		flags.Usage = func() {}
 	}
 
-	argToFieldName := make(map[string]string)
-
-	for i := 0; i < t.NumField(); i++ {
-		field := t.Field(i)
-
-		tags := internal.TagValue(field, CmdTag)
-
-		for _, flagName := range tags {
-			val := refVal.FieldByName(field.Name)
-
-			setFlagForKind(&flags, field.Type.Kind(), flagName, val)
-
-			argToFieldName[flagName] = field.Name
+	// This is the function to add flags.
+	addFlags := func(fieldName string, field reflect.Value) error {
+		setFlagForKind(&flags, field.Type().Kind(), fieldName, field)
+		return nil
+	}
+	// This is the function to set flag values
+	processFlags := func(fieldName string, field reflect.Value) error {
+		// Flag will always be defined, as guaranteed by previous iteration.
+		fl := flags.Lookup(fieldName)
+		if _, ok := fl.Value.(flag.Getter).Get().(reflect.Value); ok {
+			// If value is reflect.Value then it should not be set.
+			// It is already set when the flags were parsed
+			return nil
 		}
+
+		return internal.SetReflectValueString(fieldName, fl.Value.String(), field)
+	}
+
+	it := internal.StructIterator{
+		Value: to,
+		FieldNameFunc: func(outerName string, currentField reflect.StructField) string {
+			tags := internal.TagValue(currentField, CmdTag)
+			if tags == nil {
+				return internal.SkipField
+			}
+
+			return strings.ToLower(internal.JoinFieldNames(outerName, tags[0], "-"))
+		},
+		IteratorFunc: addFlags,
+	}
+	if err := it.Iterate(); err != nil {
+		return err
 	}
 
 	if err := flags.Parse(args); err != nil {
 		return fmt.Errorf("flags parsing error: %s", err.Error())
 	}
 
-	var errs []error
-
-	flags.Visit(func(fl *flag.Flag) {
-		if err := internal.SetStructFieldValue(argToFieldName[fl.Name], fl.Value.String(), refVal); err != nil {
-			errs = append(errs, err)
-		}
-	})
-
-	return errorFromSlice(errs)
+	it.IteratorFunc = processFlags
+	return it.Iterate()
 }
 
 func setFlagForKind(flags *flag.FlagSet, fieldKind reflect.Kind, flagName string, defValue reflect.Value) {
+	if setter := internal.GetCustomSetter(defValue.Type()); setter != nil {
+		flags.Var(CustomVar{Setter: setter, Val: defValue}, flagName, "")
+
+		return
+	}
+
 	switch fieldKind {
 	case reflect.Bool:
 		flags.Bool(flagName, defValue.Bool(), "")
@@ -110,4 +121,30 @@ func errorFromSlice(errs []error) error {
 	}
 
 	return errors.New(errString)
+}
+
+type CustomVar struct {
+	Setter internal.TypeSetter
+	Val    reflect.Value
+}
+
+func (c CustomVar) String() string {
+	if !c.Val.IsValid() || c.Val.IsZero() {
+		return ""
+	}
+
+	return fmt.Sprint(c.Val.Interface())
+}
+
+func (c CustomVar) Set(s string) error {
+	if s == "" {
+		return nil
+	}
+
+	return c.Setter(s, c.Val)
+}
+
+// Get is necessary to get reflect.Value as is and not as a string.
+func (c CustomVar) Get() interface{} {
+	return c.Val
 }

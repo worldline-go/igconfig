@@ -20,38 +20,26 @@ const EnvTag = "env"
 // Breaking change from v1: variable name will be upper-cased when doing lookup. No other cases are checked.
 type Env struct{}
 
-func (e Env) Load(_ string, to interface{}) error {
-	refVal, err := internal.GetReflectElem(to)
-	if err != nil {
-		return err
-	}
-
-	return e.ReflectLoad("", refVal)
-}
-
-func (e Env) ReflectLoad(_ string, to reflect.Value) error {
-	t := to.Type()
-
-	for i := 0; i < t.NumField(); i++ {
-		field := t.Field(i)
-
-		tags := internal.TagValue(field, EnvTag)
-
-		for _, name := range tags {
-			val, ok := lookupEnv(name)
+func (e Env) Load(baseName string, to interface{}) error {
+	it := internal.StructIterator{
+		Value:         to,
+		BaseName:      baseName,
+		FieldNameFunc: internal.EnvFieldName,
+		IteratorFunc: func(fieldName string, field reflect.Value) error {
+			val, ok := lookupEnv(fieldName)
 			if !ok {
-				continue
+				return nil
 			}
 
-			if err := internal.SetReflectValue(field.Name, val, to.Field(i)); err != nil {
+			if err := internal.SetReflectValueString(fieldName, val, field); err != nil {
 				return err
 			}
 
-			break
-		}
+			return nil
+		},
 	}
 
-	return nil
+	return it.Iterate()
 }
 
 // lookupEnv tests for an environment variable(only upper case), and if found - returns its value.

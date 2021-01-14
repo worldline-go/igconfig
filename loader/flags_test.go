@@ -2,6 +2,7 @@ package loader_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -10,7 +11,10 @@ import (
 )
 
 func TestCmdlineValues(t *testing.T) {
-	args := []string{"-t", "-n", "Piet", "--port", "1234", "--host=bol.com", "--age", "25", "--salary", "1500.00"}
+	args := []string{"-name", "Piet", "--port", "1234", "--host=bol.com",
+		"--age", "25", "--salary", "1500.00", "--dur", "94s", "--secure",
+		"--innerstruct-dur", "14s",
+	}
 
 	var c testdata.TestConfig
 
@@ -24,6 +28,10 @@ func TestCmdlineValues(t *testing.T) {
 		Port:   1234,
 		Secure: true,
 		Unused: nil,
+		Dur:    94 * time.Second,
+		InnerStruct: testdata.InnerStruct{
+			Dur: 14 * time.Second,
+		},
 	}, c)
 }
 

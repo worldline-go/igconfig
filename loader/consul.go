@@ -138,7 +138,10 @@ func (c Consul) DynamicValue(ctx context.Context, config DynamicConfig) error {
 	}
 
 	watchCtx, stopWatcher := context.WithCancel(ctx)
-	defer stopWatcher()
+	defer func() {
+		stopWatcher()
+		plan.Stop()
+	}()
 
 	var handlerErr error
 

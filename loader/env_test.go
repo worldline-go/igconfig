@@ -15,7 +15,7 @@ func TestEnvValues(t *testing.T) {
 	const funcName = "TestEnvValues"
 
 	if err := os.Setenv("HOST", "127.0.0.1"); err != nil {
-		t.Errorf("%s could not set environment variable 'HOSTNAME'", funcName)
+		t.Errorf("%s could not set environment variable 'HOST'", funcName)
 	}
 	if err := os.Setenv("PORT", "12345"); err != nil {
 		t.Errorf("%s could not set environment variable 'Port'", funcName)
@@ -41,5 +41,9 @@ func TestEnvValues(t *testing.T) {
 		Host:    "127.0.0.1",
 		Port:    12345,
 		Secure:  false,
+		InnerStruct: testdata.InnerStruct{
+			Str:  "val",
+			Time: testdata.ParsedTime,
+		},
 	}, c)
 }

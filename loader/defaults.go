@@ -2,6 +2,7 @@ package loader
 
 import (
 	"reflect"
+	"strings"
 
 	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/internal"
 )
@@ -14,12 +15,38 @@ type Default struct{}
 
 // Load loads the config struct fields with their default value as defined in the tags.
 func (d Default) Load(_ string, to interface{}) error {
-	refVal, err := internal.GetReflectElem(to)
-	if err != nil {
-		return err
+	it := internal.StructIterator{
+		Value:    to,
+		NoUpdate: true,
+		// This function will return string in format of <field_name>:<default_value>
+		// or just "-" if no default value is defined.
+		FieldNameFunc: func(outer string, f reflect.StructField) string {
+			isStruct := internal.IsStruct(f.Type)
+
+			v := internal.TagValueByKeys(f, DefaultTag)
+			if internal.IsTagOmitted(v) && !isStruct { // If no default value and is not struct - skip such field.
+				return "-"
+			}
+
+			if internal.IsTagSkip(v) { // This is situation 'default:"-"'. For structs specifically.
+				return "-"
+			}
+
+			fieldName := internal.PlainFieldNameWithPath(outer, f)
+			if isStruct {
+				return fieldName
+			}
+
+			return fieldName + ":" + v[0]
+		},
+		IteratorFunc: func(fieldName string, field reflect.Value) error {
+			sl := strings.SplitN(fieldName, ":", 2)
+
+			return internal.SetReflectValueString(sl[0], sl[1], field)
+		},
 	}
 
-	return d.ReflectLoad("", refVal)
+	return it.Iterate()
 }
 
 func (d Default) ReflectLoad(_ string, to reflect.Value) error {
@@ -43,11 +70,6 @@ func (d Default) ReflectLoad(_ string, to reflect.Value) error {
 			continue
 		}
 
-		if v, ok := typeField.Tag.Lookup(DefaultTag); ok {
-			if err := internal.SetStructFieldValue(typeField.Name, v, to); err != nil {
-				return err
-			}
-		}
 	}
 
 	return nil

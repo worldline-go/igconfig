@@ -83,6 +83,10 @@ func TestFile(t *testing.T) {
 				Port:    8080,
 				Secure:  false,
 				Unused:  nil,
+				InnerStruct: testdata.InnerStruct{
+					Str:  "val",
+					Time: testdata.ParsedTime,
+				},
 			},
 		},
 		{
@@ -98,6 +102,10 @@ func TestFile(t *testing.T) {
 				Port:    8080,
 				Secure:  false,
 				Unused:  nil,
+				InnerStruct: testdata.InnerStruct{
+					Str:  "val",
+					Time: testdata.ParsedTime,
+				},
 			},
 		},
 	}
