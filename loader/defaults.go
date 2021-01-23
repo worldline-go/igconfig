@@ -48,29 +48,3 @@ func (d Default) Load(_ string, to interface{}) error {
 
 	return it.Iterate()
 }
-
-func (d Default) ReflectLoad(_ string, to reflect.Value) error {
-	t := to.Type()
-
-	for i := 0; i < t.NumField(); i++ {
-		toField := to.Field(i)
-		if (toField.IsValid() && !toField.IsZero()) || !toField.CanSet() {
-			// Value is already set or not settable at all, skip it.
-			continue
-		}
-
-		typeField := t.Field(i)
-
-		// If it is a struct - try to set it's inner fields to.
-		if typeField.Type.Kind() == reflect.Struct {
-			if err := d.ReflectLoad("", toField); err != nil {
-				return err
-			}
-
-			continue
-		}
-
-	}
-
-	return nil
-}

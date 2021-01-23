@@ -26,25 +26,14 @@ func (e Env) Load(baseName string, to interface{}) error {
 		BaseName:      baseName,
 		FieldNameFunc: internal.EnvFieldName,
 		IteratorFunc: func(fieldName string, field reflect.Value) error {
-			val, ok := lookupEnv(fieldName)
+			val, ok := os.LookupEnv(strings.ToUpper(fieldName))
 			if !ok {
 				return nil
 			}
 
-			if err := internal.SetReflectValueString(fieldName, val, field); err != nil {
-				return err
-			}
-
-			return nil
+			return internal.SetReflectValueString(fieldName, val, field)
 		},
 	}
 
 	return it.Iterate()
-}
-
-// lookupEnv tests for an environment variable(only upper case), and if found - returns its value.
-//
-// Second return value tells if such environmental variable exists.
-func lookupEnv(envName string) (string, bool) {
-	return os.LookupEnv(strings.ToUpper(envName))
 }

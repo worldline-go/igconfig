@@ -1,7 +1,6 @@
 package loader
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -49,8 +48,8 @@ func (f Flags) LoadSlice(to interface{}, args []string) error {
 		// Flag will always be defined, as guaranteed by previous iteration.
 		fl := flags.Lookup(fieldName)
 		if _, ok := fl.Value.(flag.Getter).Get().(reflect.Value); ok {
-			// If value is reflect.Value then it should not be set.
-			// It is already set when the flags were parsed
+			// If value is reflect.Value then it should not be set:
+			// it was already set when the flags were parsed.
 			return nil
 		}
 
@@ -69,6 +68,7 @@ func (f Flags) LoadSlice(to interface{}, args []string) error {
 		},
 		IteratorFunc: addFlags,
 	}
+
 	if err := it.Iterate(); err != nil {
 		return err
 	}
@@ -100,27 +100,6 @@ func setFlagForKind(flags *flag.FlagSet, fieldKind reflect.Kind, flagName string
 	case reflect.String:
 		flags.String(flagName, defValue.String(), "")
 	}
-}
-
-// errorFromSlice will return single error by concatenating all of the provided errors.
-//
-// If no errors are provided - nil is returned.
-func errorFromSlice(errs []error) error {
-	if len(errs) == 0 {
-		return nil
-	}
-
-	var errString string
-
-	for i, err := range errs {
-		if i != 0 {
-			errString += ", "
-		}
-
-		errString += err.Error()
-	}
-
-	return errors.New(errString)
 }
 
 type CustomVar struct {

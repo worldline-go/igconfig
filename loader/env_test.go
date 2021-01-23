@@ -26,6 +26,9 @@ func TestEnvValues(t *testing.T) {
 	if err := os.Setenv("address", "should_not_be_set"); err != nil {
 		t.Errorf("%s could not set environment variable 'address'", funcName)
 	}
+	if err := os.Setenv("INNERSTRUCT_STRING", "hello"); err != nil {
+		t.Errorf("%s could not set environment variable 'address'", funcName)
+	}
 
 	var c testdata.TestConfig
 
@@ -42,7 +45,7 @@ func TestEnvValues(t *testing.T) {
 		Port:    12345,
 		Secure:  false,
 		InnerStruct: testdata.InnerStruct{
-			Str:  "val",
+			Str:  "hello",
 			Time: testdata.ParsedTime,
 		},
 	}, c)

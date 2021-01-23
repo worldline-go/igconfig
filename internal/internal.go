@@ -107,37 +107,6 @@ func ShouldSkipField(field reflect.Value, fieldName string, noUpdate bool) bool 
 		(noUpdate && !field.IsZero()) // No update requested and field is already set.
 }
 
-// FieldNameWithModifiers will run fieldNameGetter to receive field name and
-// then will apply all funcs m to resulting field name.
-func FieldNameWithModifiers(fieldNameGetter FieldNameFunc, m ...func(string) string) FieldNameFunc {
-	return func(outer string, inner reflect.StructField) string {
-		fieldName := fieldNameGetter(outer, inner)
-
-		for i := range m {
-			fieldName = m[i](fieldName)
-		}
-
-		return fieldName
-	}
-}
-
-func CombineFieldNameFuncs(fncs ...FieldNameFunc) FieldNameFunc {
-	return func(outerName string, currentField reflect.StructField) string {
-		for i := range fncs {
-			if fncs[i] == nil {
-				continue
-			}
-
-			fieldName := fncs[i](outerName, currentField)
-			if fieldName != "" {
-				return fieldName
-			}
-		}
-
-		return ""
-	}
-}
-
 func EnvFieldName(outer string, currentField reflect.StructField) string {
 	tagValues := TagValue(currentField, "env")
 	if tagValues == nil {
@@ -154,10 +123,6 @@ func EnvFieldName(outer string, currentField reflect.StructField) string {
 	}
 
 	return strings.ToUpper(outer + "_" + tagValue)
-}
-
-func PlainFieldName(_ string, currentField reflect.StructField) string {
-	return currentField.Name
 }
 
 func PlainFieldNameWithPath(outer string, currentField reflect.StructField) string {
