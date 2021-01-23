@@ -8,7 +8,7 @@ import (
 
 const DefaultConfigTag = "cfg"
 
-const SkipField = "-"
+const SkipFieldTagValue = "-"
 
 var ErrInputIsNotPointerOrStruct = errors.New("input value is not struct or not pointer")
 var ErrNoIterValue = errors.New("no value to iterate")
@@ -26,7 +26,63 @@ type StructIterator struct {
 	IteratorFunc  IteratorFunc
 }
 
+// Iterate will iterate over every field and will execute FieldNameFunc and IteratorFunc on them.
+//
+// It will dive into all inner structs and will also iterate fields there.
+//
+// Pointer fields that are equal to nil will be initialized.
+//
+// Fields(but not structs) can implement encoding.TextUnmarshaler to be able to set values with custom logic.
 func (it StructIterator) Iterate() error {
+	if err := it.ValidateData(); err != nil {
+		return err
+	}
+
+	val := it.ReflectValue.Elem()
+	valType := val.Type()
+
+	for i := 0; i < valType.NumField(); i++ {
+		toField := val.Field(i)
+		fieldName := it.FieldNameFunc(it.BaseName, valType.Field(i))
+
+		if ShouldSkipField(toField, fieldName, it.NoUpdate) {
+			continue
+		}
+
+		// Set zero-value to valid pointer values when they are being processed.
+		if toField.Kind() == reflect.Ptr && toField.IsNil() {
+			toField.Set(reflect.New(toField.Type().Elem()))
+
+			toField = toField.Elem()
+		}
+
+		// If it is a struct - try to set it's inner fields to.
+		// TODO: have a list of non-struct types for types like sql.Null* and null.*
+		if toField.Kind() == reflect.Struct && toField.Type() != TimeType {
+			subIter := StructIterator{
+				ReflectValue:  toField.Addr(), // This is just simple solution for using pointer structs as inputs.
+				BaseName:      fieldName,
+				FieldNameFunc: it.FieldNameFunc,
+				IteratorFunc:  it.IteratorFunc,
+			}
+			// Do the same iteration on inner struct.
+			if err := subIter.Iterate(); err != nil {
+				return err
+			}
+
+			continue
+		}
+
+		if err := it.IteratorFunc(fieldName, toField); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// ValidateData makes sure that input data in iterator will be able to use it.
+func (it *StructIterator) ValidateData() error {
 	if !it.ReflectValue.IsValid() {
 		it.ReflectValue = reflect.ValueOf(it.Value)
 	}
@@ -39,54 +95,16 @@ func (it StructIterator) Iterate() error {
 		return ErrInputIsNotPointerOrStruct
 	}
 
-	val := it.ReflectValue.Elem()
-	valType := val.Type()
-
-	for i := 0; i < valType.NumField(); i++ {
-		toField := val.Field(i)
-		if !toField.IsValid() || !toField.CanSet() {
-			// Value is already set or not settable at all, skip it.
-			continue
-		}
-
-		fieldName := it.FieldNameFunc(it.BaseName, valType.Field(i))
-		if fieldName == SkipField { // This is the sign that this field should be skipped.
-			continue
-		}
-
-		// Set zero-value to pointer fields when they are being processed.
-		if toField.Kind() == reflect.Ptr && toField.IsNil() {
-			toField.Set(reflect.New(toField.Type().Elem()))
-
-			toField = toField.Elem()
-		}
-
-		// If it is a struct - try to set it's inner fields to.
-		if toField.Kind() == reflect.Struct && toField.Type() != TimeType {
-			subIter := StructIterator{
-				ReflectValue:  toField.Addr(), // This is just simple solution for using pointer structs as inputs.
-				BaseName:      fieldName,
-				FieldNameFunc: it.FieldNameFunc,
-				IteratorFunc:  it.IteratorFunc,
-			}
-
-			if err := subIter.Iterate(); err != nil {
-				return err
-			}
-
-			continue
-		}
-
-		if it.NoUpdate && !toField.IsZero() { // Do not update non-empty fields if requested.
-			continue
-		}
-
-		if err := it.IteratorFunc(fieldName, toField); err != nil {
-			return err
-		}
-	}
-
 	return nil
+}
+
+// ShouldSkipField returns true if field should be skipped.
+//
+// Field will be skipped if it is not valid / cannot be set, or if fieldName is equal to SkipFieldTagValue.
+func ShouldSkipField(field reflect.Value, fieldName string, noUpdate bool) bool {
+	return (!field.IsValid() || !field.CanSet()) || // Value is already set or not settable at all, skip it.
+		IsTagSkip([]string{fieldName}) || // Field name is the one that should be skipped.
+		(noUpdate && !field.IsZero()) // No update requested and field is already set.
 }
 
 // FieldNameWithModifiers will run fieldNameGetter to receive field name and
@@ -178,7 +196,7 @@ func JoinFieldNames(outer, inner, separator string) string {
 //
 // See TagValueByKeys for usage examples.
 func TagValue(field reflect.StructField, key string) []string {
-	vals := TagValueByKeys(field, key, DefaultConfigTag)
+	vals := TagValueByKeys(field.Tag, key, DefaultConfigTag)
 	if vals == nil {
 		return []string{strings.ToLower(field.Name)}
 	}
@@ -197,11 +215,11 @@ func TagValue(field reflect.StructField, key string) []string {
 // It is valid to call this function with zero or one key.
 //
 // If no tag found - nil is returned.
-func TagValueByKeys(field reflect.StructField, keys ...string) []string {
+func TagValueByKeys(tag reflect.StructTag, keys ...string) []string {
 	var tagValue string
 	var ok bool
 	for _, tagName := range keys {
-		tagValue, ok = field.Tag.Lookup(tagName)
+		tagValue, ok = tag.Lookup(tagName)
 		if ok {
 			break
 		}
@@ -221,7 +239,7 @@ func IsTagSkip(tagVals []string) bool {
 		return false
 	}
 
-	return tagVals[0] == SkipField
+	return tagVals[0] == SkipFieldTagValue
 }
 
 // IsTagOmitted returns true if tag was not found.

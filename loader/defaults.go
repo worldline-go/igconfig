@@ -23,7 +23,7 @@ func (d Default) Load(_ string, to interface{}) error {
 		FieldNameFunc: func(outer string, f reflect.StructField) string {
 			isStruct := internal.IsStruct(f.Type)
 
-			v := internal.TagValueByKeys(f, DefaultTag)
+			v := internal.TagValueByKeys(f.Tag, DefaultTag)
 			if internal.IsTagOmitted(v) && !isStruct { // If no default value and is not struct - skip such field.
 				return "-"
 			}

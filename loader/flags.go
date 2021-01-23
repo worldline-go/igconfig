@@ -62,7 +62,7 @@ func (f Flags) LoadSlice(to interface{}, args []string) error {
 		FieldNameFunc: func(outerName string, currentField reflect.StructField) string {
 			tags := internal.TagValue(currentField, CmdTag)
 			if tags == nil {
-				return internal.SkipField
+				return internal.SkipFieldTagValue
 			}
 
 			return strings.ToLower(internal.JoinFieldNames(outerName, tags[0], "-"))
