@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"encoding"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -9,8 +10,12 @@ import (
 	"time"
 )
 
-func init() {
-	AddCustomType(time.Time{}, func(input string, val reflect.Value) error {
+type TypeSetter func(input string, val reflect.Value) error
+
+var SliceSeparator = ","
+
+var typeMap = map[reflect.Type]TypeSetter{
+	reflect.TypeOf(time.Time{}): func(input string, val reflect.Value) error {
 		t, err := time.ParseInLocation(time.RFC3339, input, time.Local)
 		if err != nil {
 			return err
@@ -19,9 +24,8 @@ func init() {
 		val.Set(reflect.ValueOf(t))
 
 		return nil
-	})
-
-	AddCustomType(time.Duration(0), func(input string, val reflect.Value) error {
+	},
+	reflect.TypeOf(time.Duration(0)): func(input string, val reflect.Value) error {
 		d, err := time.ParseDuration(input)
 		if err != nil {
 			return err
@@ -30,9 +34,8 @@ func init() {
 		val.Set(reflect.ValueOf(d))
 
 		return nil
-	})
-
-	AddCustomType([]string(nil), func(input string, val reflect.Value) error {
+	},
+	reflect.TypeOf([]string(nil)): func(input string, val reflect.Value) error {
 		if input == "" {
 			return nil
 		}
@@ -45,17 +48,12 @@ func init() {
 		val.Set(reflect.ValueOf(sl))
 
 		return nil
-	})
+	},
 }
-
-type TypeSetter func(input string, val reflect.Value) error
-
-var SliceSeparator = ","
-
-var typeMap = map[reflect.Type]TypeSetter{}
 var typeMapMu sync.RWMutex
 
 var TimeType = reflect.TypeOf(time.Time{})
+var unmarshalTextType = reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem()
 
 // isTrue compares a string to determine the boolean value.
 //
@@ -67,7 +65,7 @@ func isTrue(str string) bool {
 	return res
 }
 
-// AddCustomType will add custom setter for specified type.
+// AddCustomTypeSetter will add custom setter for specified type.
 // It is rare to add setter for pointer type: only to satisfy 'flags' loader.
 // Warning: pointer types are not guaranteed to work!
 //
@@ -78,15 +76,15 @@ func isTrue(str string) bool {
 //
 // For example:
 //	// This will add custom setter for type 'int64'
-//	AddCustomType(int64(0), someSetter)
+//	AddCustomTypeSetter(int64(0), someSetter)
 //
 //	// To disable any custom setter - provide nil as setter for required type:
-//	AddCustomType(int64(0), nil)
+//	AddCustomTypeSetter(int64(0), nil)
 //
 //	// To add pointer-only type use this:
-//	AddCustomType((*time.Duration)(nil), someDurationSetter)
+//	AddCustomTypeSetter((*time.Duration)(nil), someDurationSetter)
 //	// This will add custom setter for type '*time.Duration' only.
-func AddCustomType(typ interface{}, setter TypeSetter) {
+func AddCustomTypeSetter(typ interface{}, setter TypeSetter) {
 	typeMapMu.Lock()
 
 	reflTyp := reflect.TypeOf(typ)
@@ -117,13 +115,24 @@ func SetStructFieldValue(fieldName, v string, strct reflect.Value) error {
 // SetReflectValueString sets a value in the config struct.
 //
 // 'val' is actual variable that should be set.
+//
+// Custom types can be added for value setting with AddCustomTypeSetter.
+//
+// If type that is being set implements encoding.TextUnmarshaler - it will be used instead of direct field set.
+// If custom setter function is present AND type implements encoding.TextUnmarshaler -
+// custom setter function will take priority.
 func SetReflectValueString(fieldName, v string, val reflect.Value) error {
 	const valueMsg = "value for val %q not a valid %q"
+	val = reflect.Indirect(val)
 
 	kindName := val.Type().String()
 
 	if setter := GetCustomSetter(val.Type()); setter != nil {
 		return setter(v, val)
+	}
+	// Check if this type or pointer to this type implements encoding.TextUnmarshaler
+	if implVal := TypeImplementsInterface(val, unmarshalTextType); implVal.IsValid() {
+		return implVal.Interface().(encoding.TextUnmarshaler).UnmarshalText([]byte(v))
 	}
 
 	switch val.Kind() {
@@ -157,4 +166,20 @@ func SetReflectValueString(fieldName, v string, val reflect.Value) error {
 	}
 
 	return nil
+}
+
+// TypeImplementsInterface checks if provided value's type,
+// or pointer(if possible to make pointer) to it's type implements specified interface type.
+//
+// interfaceType can be created as reflect.TypeOf((*interface{})(nil)).Elem().
+func TypeImplementsInterface(val reflect.Value, interfaceType reflect.Type) reflect.Value {
+	if val.Type().Implements(interfaceType) {
+		return val
+	}
+
+	if val.CanAddr() && val.Addr().Type().Implements(interfaceType) {
+		return val.Addr()
+	}
+
+	return reflect.Value{}
 }
