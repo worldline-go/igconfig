@@ -57,16 +57,9 @@ func (f Flags) LoadSlice(to interface{}, args []string) error {
 	}
 
 	it := internal.StructIterator{
-		Value: to,
-		FieldNameFunc: func(outerName string, currentField reflect.StructField) string {
-			tags := internal.TagValue(currentField, CmdTag)
-			if tags == nil {
-				return internal.SkipFieldTagValue
-			}
-
-			return strings.ToLower(internal.JoinFieldNames(outerName, tags[0], "-"))
-		},
-		IteratorFunc: addFlags,
+		Value:         to,
+		FieldNameFunc: internal.FieldNameWithSeparator(CmdTag, "-", strings.ToLower),
+		IteratorFunc:  addFlags,
 	}
 
 	if err := it.Iterate(); err != nil {

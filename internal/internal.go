@@ -107,22 +107,26 @@ func ShouldSkipField(field reflect.Value, fieldName string, noUpdate bool) bool 
 		(noUpdate && !field.IsZero()) // No update requested and field is already set.
 }
 
-func EnvFieldName(outer string, currentField reflect.StructField) string {
-	tagValues := TagValue(currentField, "env")
-	if tagValues == nil {
-		return "-"
-	}
+// FieldNameWithSeparator will return FieldNameFunc that will use provided struct tag to get field name.
+//
+// Outer and inner field names will be concatenated with provided separator.
+//
+// Optionally result modifying functions can be specified with opts argument.
+func FieldNameWithSeparator(tag, separator string, opts ...func(string) string) FieldNameFunc {
+	return func(outerName string, currentField reflect.StructField) string {
+		tagValue := TagValue(currentField, tag)[0]
 
-	tagValue := tagValues[0]
-	if strings.Contains(tagValue, ",") {
-		tagValue = tagValue[:strings.Index(tagValue, ",")]
-	}
+		if strings.Contains(tagValue, ",") {
+			tagValue = tagValue[:strings.Index(tagValue, ",")]
+		}
 
-	if outer == "" {
-		return strings.ToUpper(tagValue)
-	}
+		result := JoinFieldNames(outerName, tagValue, separator)
+		for i := range opts {
+			result = opts[i](result)
+		}
 
-	return strings.ToUpper(outer + "_" + tagValue)
+		return result
+	}
 }
 
 func PlainFieldNameWithPath(outer string, currentField reflect.StructField) string {

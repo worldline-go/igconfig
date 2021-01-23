@@ -24,7 +24,7 @@ func (e Env) Load(baseName string, to interface{}) error {
 	it := internal.StructIterator{
 		Value:         to,
 		BaseName:      baseName,
-		FieldNameFunc: internal.EnvFieldName,
+		FieldNameFunc: internal.FieldNameWithSeparator(EnvTag, "_", strings.ToLower),
 		IteratorFunc: func(fieldName string, field reflect.Value) error {
 			val, ok := os.LookupEnv(strings.ToUpper(fieldName))
 			if !ok {
