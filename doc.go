@@ -24,10 +24,5 @@ In rare cases caller might want to use specific set of loaders to load configura
 
 Some loaders also provide ability to periodically update values.
 This can be useful if application has logging and caller might want to change logging level at a runtime.
-
-// Changes!
-All loaders that use internal.StructIterator will not be able to use multiple names of fields!
-Env is one of them.
-
 */
 package igconfig

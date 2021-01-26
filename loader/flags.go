@@ -16,7 +16,25 @@ const CmdTag = "cmd"
 
 // Flags will parse CMD args.
 //
+// Flags defined in inner structs will be set with
+// combination of outer flag name and inner flag name separated by '-'.
+// For example:
+//	type s struct{
+//		A struct{
+//			B int `cmd:"inner"`
+//		} `cmd:"outer"`
+//	}
+// Field B could be set using flag '--outer-inner'.
+// This works for any depth of field.
+//
+// If flag name is not specified and "cfg" tag is not present -
+// lowercase field name will be used as flag name.
+//
 // Breaking change from v1: parsing will fail with usage if unknown flag will be found.
+//
+// Also only first value from the tag will be used.
+// This means that if tag is 'cmd:"tag,t"' - only "tag" will be used as command line.
+// This might be changed in the future.
 type Flags struct {
 	// NoUsage may be used to silence usage on invalid flags.
 	NoUsage bool

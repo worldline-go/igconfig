@@ -16,6 +16,9 @@ var ErrNoIterValue = errors.New("no value to iterate")
 type FieldNameFunc func(outerName string, currentField reflect.StructField) string
 type IteratorFunc func(fieldName string, field reflect.Value) error
 
+// StructIterator allows to traverse structures and call predefined function on each field.
+//
+// All loaders that use internal.StructIterator will not be able to use multiple names of fields!
 type StructIterator struct {
 	Value        interface{}
 	ReflectValue reflect.Value
