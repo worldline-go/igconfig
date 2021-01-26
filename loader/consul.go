@@ -83,6 +83,10 @@ func (c Consul) Load(appName string, to interface{}) error {
 
 // DynamicValue allows to get dynamically updated values at a runtime.
 //
+// WARNING: this is experimental feature and is not guaranteed to work. Also it could be changed at will.
+//
+// ---
+//
 // If specified key has new value(or was deleted) - runner will be called.
 //
 // This function will spin up Goroutine to track changes in background, while this function will still be blocking.
@@ -124,6 +128,7 @@ func (c Consul) Load(appName string, to interface{}) error {
 //			}
 //		}
 //	}()
+//
 func (c Consul) DynamicValue(ctx context.Context, config DynamicConfig) error {
 	if err := c.EnsureClient(); err != nil {
 		return err

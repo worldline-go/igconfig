@@ -86,6 +86,7 @@ func TestNewConsuler_WrongAddr(t *testing.T) {
 }
 
 func TestConsul_DynamicValue(t *testing.T) {
+	t.Skip("currently DynamicValue is experimental")
 	// Start with 5 so we will be able to output some same-value and same-index variables.
 	var consulCalls = 5
 	var configPath = path.Join("app", "field")
