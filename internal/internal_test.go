@@ -2,6 +2,7 @@ package internal
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -44,12 +45,12 @@ func TestEnvFieldName(t *testing.T) {
 			result: "TEST_LONG",
 		},
 	}
-
+	envFieldName := FieldNameWithSeparator("env", "_", strings.ToUpper)
 	for i := range tests {
 		test := tests[i]
 
 		t.Run(test.name, func(t *testing.T) {
-			result := EnvFieldName(test.outer, reflect.StructField{Tag: reflect.StructTag(test.tag)})
+			result := envFieldName(test.outer, reflect.StructField{Tag: reflect.StructTag(test.tag)})
 			assert.Equal(t, test.result, result)
 		})
 	}
@@ -66,7 +67,7 @@ func TestStructIterator_Iterate(t *testing.T) {
 			Name: "small normal env",
 			Iterator: StructIterator{
 				Value:         &structWithEverything{},
-				FieldNameFunc: EnvFieldName,
+				FieldNameFunc: FieldNameWithSeparator("env", "_", strings.ToUpper),
 				IteratorFunc: mapIterator(map[string]string{
 					"A": "1",
 				}),
@@ -91,7 +92,7 @@ func TestStructIterator_Iterate(t *testing.T) {
 			Name: "env with inner struct",
 			Iterator: StructIterator{
 				Value:         &structWithEverything{},
-				FieldNameFunc: EnvFieldName,
+				FieldNameFunc: FieldNameWithSeparator("env", "_", strings.ToUpper),
 				IteratorFunc: mapIterator(map[string]string{
 					"A":            "1",
 					"STRUCT_INNER": "5",
