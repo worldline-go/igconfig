@@ -94,7 +94,7 @@ func (f Flags) LoadSlice(to interface{}, args []string) error {
 
 func setFlagForKind(flags *flag.FlagSet, fieldKind reflect.Kind, flagName string, defValue reflect.Value) {
 	if setter := internal.GetCustomSetter(defValue.Type()); setter != nil {
-		flags.Var(CustomVar{Setter: setter, Val: defValue}, flagName, "")
+		flags.Var(CustomFlagVar{Setter: setter, Val: defValue}, flagName, "")
 
 		return
 	}
@@ -113,12 +113,12 @@ func setFlagForKind(flags *flag.FlagSet, fieldKind reflect.Kind, flagName string
 	}
 }
 
-type CustomVar struct {
+type CustomFlagVar struct {
 	Setter internal.TypeSetter
 	Val    reflect.Value
 }
 
-func (c CustomVar) String() string {
+func (c CustomFlagVar) String() string {
 	if !c.Val.IsValid() || c.Val.IsZero() {
 		return ""
 	}
@@ -126,7 +126,7 @@ func (c CustomVar) String() string {
 	return fmt.Sprint(c.Val.Interface())
 }
 
-func (c CustomVar) Set(s string) error {
+func (c CustomFlagVar) Set(s string) error {
 	if s == "" {
 		return nil
 	}
@@ -135,6 +135,6 @@ func (c CustomVar) Set(s string) error {
 }
 
 // Get is necessary to get reflect.Value as is and not as a string.
-func (c CustomVar) Get() interface{} {
+func (c CustomFlagVar) Get() interface{} {
 	return c.Val
 }
