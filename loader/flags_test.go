@@ -1,11 +1,14 @@
 package loader_test
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
+	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/internal"
 	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/loader"
 	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/testdata"
 )
@@ -38,4 +41,37 @@ func TestCmdlineValues(t *testing.T) {
 func TestFlags_LoadSliceInvalid(t *testing.T) {
 	assert.EqualError(t, (loader.Flags{NoUsage: true}).LoadSlice(&testdata.TestConfig{}, []string{"-x"}),
 		"flags parsing error: flag provided but not defined: -x")
+}
+
+func TestFlags_FieldNameFunc(t *testing.T) {
+	var s struct {
+		One   bool     `cfg:"ones"`
+		Two   string   `cmd:"2"`
+		Three []string `cfg:"three" cmd:"-"`
+		Inner struct {
+			Field      bool `cfg:"f"`
+			unexported bool `cfg:"unexported"`
+		} `cmd:"in"`
+	}
+
+	var res []string
+	it := internal.StructIterator{
+		Value:         &s,
+		FieldNameFunc: fieldCapture(loader.Flags{}.FieldNameFunc, &res),
+		IteratorFunc:  func(fieldName string, field reflect.Value) error { return nil },
+	}
+
+	require.NoError(t, it.Iterate())
+
+	require.Equal(t, []string{"ones", "2", "-", "in", "in-f"}, res)
+}
+
+func fieldCapture(nameFunc internal.FieldNameFunc, namesSlice *[]string) internal.FieldNameFunc {
+	return func(outerName string, currentField reflect.StructField) string {
+		name := nameFunc(outerName, currentField)
+
+		*namesSlice = append(*namesSlice, name)
+
+		return name
+	}
 }
