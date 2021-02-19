@@ -48,7 +48,7 @@ func (d Default) FieldNameFunc(outer string, field reflect.StructField) string {
 		return fieldName
 	}
 
-	return fieldName + ":" + v[0]
+	return fieldName + ":" + strings.Join(v, ",")
 }
 
 // IteratorFunc returns a setter function for setting fields.

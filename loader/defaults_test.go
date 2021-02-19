@@ -17,7 +17,8 @@ type OtherInner struct {
 type Inner struct {
 	OtherVal string `default:"other_default"`
 	OtherInner
-	unexported string `default:"value"`
+	unexported string   `default:"value"`
+	Slice      []string `default:"1,3,4,5"`
 }
 
 type StructWithInner struct {
@@ -43,6 +44,7 @@ func TestDefaultsValues(t *testing.T) {
 		Address: "localhost",
 		Port:    port,
 		Secure:  false,
+		Slice:   []string{"1", "2", "5", "6"},
 		InnerStruct: testdata.InnerStruct{
 			Str:  "val",
 			Time: testdata.ParsedTime,
@@ -58,6 +60,8 @@ func TestDefault_WithInnerStruct(t *testing.T) {
 	assert.Equal(t,
 		StructWithInner{Val: 1,
 			Inner: Inner{OtherVal: "other_default",
-				OtherInner: OtherInner{Another: "another"}},
+				OtherInner: OtherInner{Another: "another"},
+				Slice:      []string{"1", "3", "4", "5"},
+			},
 		}, v)
 }
