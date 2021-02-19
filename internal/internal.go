@@ -45,8 +45,14 @@ func (it StructIterator) Iterate() error {
 	valType := val.Type()
 
 	for i := 0; i < valType.NumField(); i++ {
-		toField := val.Field(i)
-		fieldName := it.FieldNameFunc(it.BaseName, valType.Field(i))
+		toField, structField := val.Field(i), valType.Field(i)
+		// Do not process unexported fields.
+		// PkgPath is set only for unexported fields: https://golang.org/pkg/reflect/#StructField
+		if structField.PkgPath != "" {
+			continue
+		}
+
+		fieldName := it.FieldNameFunc(it.BaseName, structField)
 
 		if ShouldSkipField(toField, fieldName, it.NoUpdate) {
 			continue
