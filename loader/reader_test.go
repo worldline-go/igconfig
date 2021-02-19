@@ -73,7 +73,7 @@ func TestFile(t *testing.T) {
 	}{
 		{
 			Name: "TestFileSimple",
-			Data: "age=28\nsalary=1800.00\nsettle_name=Jantje",
+			Data: "age=28\nsalary=1800.00\nsettle_name=Jantje\nslice=1,2,3",
 			Result: testdata.TestConfig{
 				Name:    "Jantje",
 				Age:     28,
@@ -82,7 +82,7 @@ func TestFile(t *testing.T) {
 				Address: "localhost",
 				Port:    8080,
 				Secure:  false,
-				Unused:  nil,
+				Slice:   []string{"1", "2", "3"},
 				InnerStruct: testdata.InnerStruct{
 					Str:  "val",
 					Time: testdata.ParsedTime,
@@ -92,7 +92,7 @@ func TestFile(t *testing.T) {
 		{
 
 			Name: "TestFileComplex",
-			Data: "// Age\nage=28\n#Salary\nsalary=1800.00\n\nsettle_name=Jantje\n ## Name of subject ##\nwrong=test\n\n",
+			Data: "// Age\nage=28\n#Salary\nsalary=1800.00\n\nsettle_name=Jantje\n ## Name of subject ##\nwrong=test\n\n\nslice=3,2,1",
 			Result: testdata.TestConfig{
 				Name:    "Jantje",
 				Age:     28,
@@ -101,7 +101,7 @@ func TestFile(t *testing.T) {
 				Address: "localhost",
 				Port:    8080,
 				Secure:  false,
-				Unused:  nil,
+				Slice:   []string{"3", "2", "1"},
 				InnerStruct: testdata.InnerStruct{
 					Str:  "val",
 					Time: testdata.ParsedTime,

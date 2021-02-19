@@ -27,7 +27,10 @@ func TestEnvValues(t *testing.T) {
 		t.Errorf("%s could not set environment variable 'address'", funcName)
 	}
 	if err := os.Setenv("INNERSTRUCT_STRING", "hello"); err != nil {
-		t.Errorf("%s could not set environment variable 'address'", funcName)
+		t.Errorf("%s could not set environment variable 'INNERSTRUCT_STRING'", funcName)
+	}
+	if err := os.Setenv("SLICE", "3,4,4"); err != nil {
+		t.Errorf("%s could not set environment variable 'SLICE'", funcName)
 	}
 
 	var c testdata.TestConfig
@@ -44,6 +47,7 @@ func TestEnvValues(t *testing.T) {
 		Host:    "127.0.0.1",
 		Port:    12345,
 		Secure:  false,
+		Slice:   []string{"3", "4", "4"},
 		InnerStruct: testdata.InnerStruct{
 			Str:  "hello",
 			Time: testdata.ParsedTime,

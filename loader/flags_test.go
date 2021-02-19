@@ -16,7 +16,7 @@ import (
 func TestCmdlineValues(t *testing.T) {
 	args := []string{"-name", "Piet", "--port", "1234", "--host=bol.com",
 		"--age", "25", "--salary", "1500.00", "--dur", "94s", "--secure",
-		"--innerstruct-dur", "14s",
+		"--slice", "4,4,5", "--innerstruct-dur", "14s",
 	}
 
 	var c testdata.TestConfig
@@ -30,7 +30,7 @@ func TestCmdlineValues(t *testing.T) {
 		Host:   "bol.com",
 		Port:   1234,
 		Secure: true,
-		Unused: nil,
+		Slice:  []string{"4", "4", "5"},
 		Dur:    94 * time.Second,
 		InnerStruct: testdata.InnerStruct{
 			Dur: 14 * time.Second,
