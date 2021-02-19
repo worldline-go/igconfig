@@ -16,35 +16,44 @@ type Default struct{}
 // Load loads the config struct fields with their default value as defined in the tags.
 func (d Default) Load(_ string, to interface{}) error {
 	it := internal.StructIterator{
-		Value:    to,
-		NoUpdate: true,
-		// This function will return string in format of <field_name>:<default_value>
-		// or just "-" if no default value is defined.
-		FieldNameFunc: func(outer string, f reflect.StructField) string {
-			isStruct := internal.IsStruct(f.Type)
-
-			v := internal.TagValueByKeys(f.Tag, DefaultTag)
-			if internal.IsTagOmitted(v) && !isStruct { // If no default value and is not struct - skip such field.
-				return "-"
-			}
-
-			if internal.IsTagSkip(v) { // This is situation 'default:"-"'. For structs specifically.
-				return "-"
-			}
-
-			fieldName := internal.PlainFieldNameWithPath(outer, f)
-			if isStruct {
-				return fieldName
-			}
-
-			return fieldName + ":" + v[0]
-		},
-		IteratorFunc: func(fieldName string, field reflect.Value) error {
-			sl := strings.SplitN(fieldName, ":", 2)
-
-			return internal.SetReflectValueString(sl[0], sl[1], field)
-		},
+		Value:         to,
+		NoUpdate:      true,
+		FieldNameFunc: d.FieldNameFunc,
+		IteratorFunc:  d.IteratorFunc,
 	}
 
 	return it.Iterate()
+}
+
+// FieldNameFunc defined field retrieval function for Default loader.
+//
+// This function will return string in format of <field_name>:<default_value>
+// or just "-" if no default value is defined.
+func (d Default) FieldNameFunc(outer string, field reflect.StructField) string {
+	isStruct := internal.IsStruct(field.Type)
+
+	v := internal.TagValueByKeys(field.Tag, DefaultTag)
+	if internal.IsTagOmitted(v) && !isStruct { // If no default value and is not struct - skip such field.
+		return "-"
+	}
+
+	// This is situation 'default:"-"'. For structs specifically.
+	// If this is the case - then whole struct will be skipped.
+	if internal.IsTagSkip(v) {
+		return "-"
+	}
+
+	fieldName := internal.PlainFieldNameWithPath(outer, field)
+	if isStruct {
+		return fieldName
+	}
+
+	return fieldName + ":" + v[0]
+}
+
+// IteratorFunc returns a setter function for setting fields.
+func (d Default) IteratorFunc(fieldName string, field reflect.Value) error {
+	sl := strings.SplitN(fieldName, ":", 2)
+
+	return internal.SetReflectValueString(sl[0], sl[1], field)
 }

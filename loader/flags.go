@@ -56,28 +56,10 @@ func (f Flags) LoadSlice(to interface{}, args []string) error {
 		flags.Usage = func() {}
 	}
 
-	// This is the function to add flags.
-	addFlags := func(fieldName string, field reflect.Value) error {
-		setFlagForKind(&flags, field.Type().Kind(), fieldName, field)
-		return nil
-	}
-	// This is the function to set flag values
-	processFlags := func(fieldName string, field reflect.Value) error {
-		// Flag will always be defined, as guaranteed by previous iteration.
-		fl := flags.Lookup(fieldName)
-		if _, ok := fl.Value.(flag.Getter).Get().(reflect.Value); ok {
-			// If value is reflect.Value then it should not be set:
-			// it was already set when the flags were parsed.
-			return nil
-		}
-
-		return internal.SetReflectValueString(fieldName, fl.Value.String(), field)
-	}
-
 	it := internal.StructIterator{
 		Value:         to,
 		FieldNameFunc: internal.FieldNameWithSeparator(CmdTag, "-", strings.ToLower),
-		IteratorFunc:  addFlags,
+		IteratorFunc:  f.AddFlagsIterator(&flags),
 	}
 
 	if err := it.Iterate(); err != nil {
@@ -88,8 +70,38 @@ func (f Flags) LoadSlice(to interface{}, args []string) error {
 		return fmt.Errorf("flags parsing error: %s", err.Error())
 	}
 
-	it.IteratorFunc = processFlags
+	it.IteratorFunc = f.ProcessFagsIterator(flags)
 	return it.Iterate()
+}
+
+// FieldNameFunc returns a field name retrieved from `cmd` tag,
+// concatenated with '-'(minus sign) and lowercased.
+func (f Flags) FieldNameFunc(outer string, field reflect.StructField) string {
+	return internal.FieldNameWithSeparator(CmdTag, "-", strings.ToLower)(outer, field)
+}
+
+// AddFlagsIterator is the function to add flags to a specified flag set.
+func (f Flags) AddFlagsIterator(set *flag.FlagSet) internal.IteratorFunc {
+	return func(fieldName string, field reflect.Value) error {
+		setFlagForKind(set, field.Type().Kind(), fieldName, field)
+
+		return nil
+	}
+}
+
+// ProcessFagsIterator is the function to set flag values based on already parsed flags.
+func (f Flags) ProcessFagsIterator(set flag.FlagSet) internal.IteratorFunc {
+	return func(fieldName string, field reflect.Value) error {
+		// Flag will always be defined, as guaranteed by previous iteration.
+		fl := set.Lookup(fieldName)
+		if _, ok := fl.Value.(flag.Getter).Get().(reflect.Value); ok {
+			// If value is reflect.Value then it should not be set:
+			// it was already set when the flags were parsed.
+			return nil
+		}
+
+		return internal.SetReflectValueString(fieldName, fl.Value.String(), field)
+	}
 }
 
 func setFlagForKind(flags *flag.FlagSet, fieldKind reflect.Kind, flagName string, defValue reflect.Value) {
