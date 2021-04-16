@@ -20,10 +20,11 @@ const EnvTag = "env"
 // Breaking change from v1: variable name will be upper-cased when doing lookup. No other cases are checked.
 type Env struct{}
 
-func (e Env) Load(baseName string, to interface{}) error {
+// Load implementation for Env ignores variable name prefix.
+// We want to load env vars without Vault like prefix.
+func (e Env) Load(_ string, to interface{}) error {
 	it := internal.StructIterator{
 		Value:         to,
-		BaseName:      baseName,
 		FieldNameFunc: e.FieldNameFunc,
 		IteratorFunc:  e.IteratorFunc,
 	}

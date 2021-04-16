@@ -27,7 +27,7 @@ func ExampleLoadConfig() {
 	// Below are just an examples of how values can be provided. You don't need to do this in your code.
 	// In real-world - this will be provided from env, flags or Consul/Vault
 	os.Args = []string{"executable", "-name", "FromFlags"}
-	_ = os.Setenv("ADM0001S_PORT", "5647")
+	_ = os.Setenv("PORT", "5647")
 
 	if err := igconfig.LoadConfig("adm0001s", &config); err != nil {
 		log.Fatalf("load configuration: %s", err.Error())
