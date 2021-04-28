@@ -17,16 +17,14 @@ var DefaultLoaders = [...]loader.Loader{
 	loader.Default{},
 	loader.Consul{},
 	loader.Vault{},
+	loader.Reader{},
 	loader.Env{},
 	loader.Flags{},
 }
 
 // LoadConfig loads a configuration struct from a fileName, the environment and finally from
 // command-line parameters (the latter override the former) into a config struct.
-// This is a convenience function encapsulating all individual functions above.
-//
-// Note: this does not load configuration from any kind of files.
-// If this is required - use loader.Reader to load data from file.
+// This is a convenience function encapsulating all individual loaders specified in DefaultLoaders.
 func LoadConfig(appName string, c interface{}) error {
 	return LoadWithLoaders(appName, c, DefaultLoaders[:]...)
 }

@@ -1,39 +1,70 @@
 package loader
 
 import (
-	"bufio"
+	"errors"
 	"io"
 	"os"
 	"path"
-	"strings"
-
-	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/internal"
 )
 
-const CfgTag = internal.DefaultConfigTag
+// ConfFileSuffix is the suffix for configuration file.
+// It is not specific for type(.yaml, .json, etc) because it is possible to change which loader will be used.
+var ConfFileSuffix = ".conf"
+
+var _ Loader = Reader{}
+
+// EnvConfigFile sets a name for environmental variable that can hold path for configuration file.
+const EnvConfigFile = "CONFIG_FILE"
 
 // Reader is intended to be a limited time option to read configuration from files.
 // As such it is not included in default loaders list.
 //
 // Breaking changes from v1: config field name will be used as-is, without changing case.
 //
-// Deprecated: After Reader will be removed it's place will take Consul + Vault combination.
+// Config file name will be generated as "appName + ConfFileSuffix".
 type Reader struct{}
+
+// Load will try to load configuration file from two places: working directory(or file specified in env) and /etc.
+// File in /etc will only be read if configuration file is missing in working directory.
+//
+// See DefaultDecoder for understanding of which decoder will used in this loader.
+//
+// Not existing configuration files are not treated as an error.
+// If this behavior is required - use `Reader.Load*` methods directly.
+func (r Reader) Load(appName string, to interface{}) error {
+	err := CheckNotExistError(r.LoadWorkDir(appName, to))
+	if err == nil {
+		return nil
+	}
+
+	return CheckNotExistError(r.LoadEtc(appName, to))
+}
+
+// LoadWorkDir will load configuration from current working directory.
+//
+// If EnvConfigFile environment variable is specified - it will have priority over current working directory.
+// EnvConfigFile value will be expanded with environment before use.
+func (r Reader) LoadWorkDir(appName string, to interface{}) error {
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	filePath := path.Join(wd, appName+ConfFileSuffix)
+
+	if envFile := os.Getenv(EnvConfigFile); envFile != "" {
+		filePath = os.ExpandEnv(envFile)
+	}
+
+	return r.LoadFile(filePath, to)
+}
 
 // LoadEtc will load configuration file from /etc directory.
 // File name is appName, so resulting path will be /etc/<appName>.
 func (r Reader) LoadEtc(appName string, to interface{}) error {
 	const etcPath = "/etc"
 
-	return r.LoadFile(path.Join(etcPath, appName), to)
-}
-
-// LoadSecret will load Docker secret file.
-// Full file path will be /run/secrets/<appName>.
-func (r Reader) LoadSecret(appName string, to interface{}) error {
-	const secretPath = "/run/secrets"
-
-	return r.LoadFile(path.Join(secretPath, appName), to)
+	return r.LoadFile(path.Join(etcPath, appName+ConfFileSuffix), to)
 }
 
 // LoadFile loads config values from a fileName.
@@ -47,52 +78,23 @@ func (r Reader) LoadFile(fileName string, to interface{}) error {
 	return r.LoadReader(f, to)
 }
 
-func (Reader) LoadReader(r io.Reader, to interface{}) error {
-	refVal, err := internal.GetReflectElem(to)
-	if err != nil {
-		return err
+// LoadReader is alias to Reader.LoadReaderWithDecoder(reader, to, DefaultDecoder)
+func (r Reader) LoadReader(reader io.Reader, to interface{}) error {
+	return r.LoadReaderWithDecoder(reader, to, DefaultDecoder)
+}
+
+// LoadReaderWithDecoder will decode input in `r` into `to` by using `decoder`.
+func (Reader) LoadReaderWithDecoder(r io.Reader, to interface{}, decoder Decoder) error {
+	return decoder(r, to)
+}
+
+// CheckNotExistError will return specified error if it is not os.ErrNotExists.
+//
+// Otherwise it will return nil.
+func CheckNotExistError(err error) error {
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
 	}
 
-	t := refVal.Type()
-
-	tagToFieldName := make(map[string]string)
-
-	for i := 0; i < t.NumField(); i++ {
-		field := t.Field(i)
-
-		tags := internal.TagValue(field, CfgTag)
-
-		for _, n := range tags {
-			tagToFieldName[n] = field.Name
-		}
-	}
-
-	scanner := bufio.NewScanner(r)
-	for scanner.Scan() {
-		s := scanner.Text()
-
-		s = strings.TrimSpace(s)
-		if s == "" || strings.HasPrefix(s, "//") || strings.HasPrefix(s, "#") {
-			continue
-		}
-
-		i := strings.Index(s, "=")
-		if i <= 0 {
-			continue
-		}
-
-		k := strings.TrimSpace(s[:i])
-		v := strings.TrimSpace(s[i+1:])
-		fieldName, ok := tagToFieldName[k]
-
-		if !ok {
-			continue
-		}
-
-		if err := internal.SetStructFieldValue(fieldName, v, refVal); err != nil {
-			return err
-		}
-	}
-
-	return scanner.Err()
+	return err
 }

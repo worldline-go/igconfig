@@ -1,127 +1,76 @@
 package loader_test
 
 import (
-	"bytes"
-	"strconv"
+	"errors"
+	"os"
+	"path"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
 	"github.com/stretchr/testify/require"
 
 	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/loader"
 	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/testdata"
 )
 
-func TestFileBadData(t *testing.T) {
-	var (
-		buf bytes.Buffer
-	)
-	tests := []struct {
-		FileData string
-		Error    string
-	}{
-		{
-			FileData: "age=haha",
-			Error:    `value for val "Age" not a valid "uint"`,
-		},
-		{
-			FileData: "age",
-		},
-	}
+func TestReader_LoadWorkDir_EnvFile(t *testing.T) {
+	data := `salary: 112.34
+host: example.com
+innerstruct:
+  str: test_me`
+
+	f, err := os.CreateTemp("", "conf")
+	require.NoError(t, err)
+	defer os.Remove(f.Name())
+
+	_, err = f.WriteString(data)
+	require.NoError(t, err)
+
+	os.Setenv(loader.EnvConfigFile, f.Name())
+	defer os.Unsetenv(loader.EnvConfigFile)
+
+	r := loader.Reader{}
 
 	var c testdata.TestConfig
+	require.NoError(t, r.LoadWorkDir("a", &c))
 
-	for i, test := range tests {
-		test := test
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			l := loader.Reader{}
-
-			buf.WriteString(test.FileData)
-
-			err := l.LoadReader(&buf, &c)
-			if test.Error != "" {
-				assert.EqualError(t, err, test.Error)
-			} else {
-				assert.NoError(t, err)
-			}
-
-			buf.Reset()
-		})
-	}
+	assert.Equal(t, testdata.TestConfig{
+		Salary:      112.34,
+		Host:        "example.com",
+		InnerStruct: testdata.InnerStruct{Str: "test_me"},
+	}, c)
 }
 
-func TestFileOverwriteDefault(t *testing.T) {
-	var (
-		buf      bytes.Buffer
-		fileData = "settle_name="
-	)
-	buf.WriteString(fileData)
+func TestReader_LoadWorkDir(t *testing.T) {
+	data := `salary: 112.34
+host: example.com
+innerstruct:
+  str: test_me`
+
+	wd, _ := os.Getwd()
+	f, err := os.Create(path.Join(wd, "app"+loader.ConfFileSuffix))
+	require.NoError(t, err)
+	defer os.Remove(f.Name())
+
+	_, err = f.WriteString(data)
+	require.NoError(t, err)
+
+	r := loader.Reader{}
 
 	var c testdata.TestConfig
+	require.NoError(t, r.LoadWorkDir("app", &c))
 
-	require.NoError(t, (loader.Default{}).Load("", &c))
-	assert.NoError(t, (loader.Reader{}).LoadReader(&buf, &c))
-
-	assert.Equal(t, "", c.Name)
+	assert.Equal(t, testdata.TestConfig{
+		Salary:      112.34,
+		Host:        "example.com",
+		InnerStruct: testdata.InnerStruct{Str: "test_me"},
+	}, c)
 }
 
-func TestFile(t *testing.T) {
-	tests := []struct {
-		Name   string
-		Data   string
-		Result testdata.TestConfig
-	}{
-		{
-			Name: "TestFileSimple",
-			Data: "age=28\nsalary=1800.00\nsettle_name=Jantje\nslice=1,2,3",
-			Result: testdata.TestConfig{
-				Name:    "Jantje",
-				Age:     28,
-				Salary:  1800.0,
-				Host:    "localhost",
-				Address: "localhost",
-				Port:    8080,
-				Secure:  false,
-				Slice:   []string{"1", "2", "3"},
-				InnerStruct: testdata.InnerStruct{
-					Str:  "val",
-					Time: testdata.ParsedTime,
-				},
-			},
-		},
-		{
+func TestReader_LoadWorkDir_DoesNotExist(t *testing.T) {
+	r := loader.Reader{}
 
-			Name: "TestFileComplex",
-			Data: "// Age\nage=28\n#Salary\nsalary=1800.00\n\nsettle_name=Jantje\n ## Name of subject ##\nwrong=test\n\n\nslice=3,2,1",
-			Result: testdata.TestConfig{
-				Name:    "Jantje",
-				Age:     28,
-				Salary:  1800.0,
-				Host:    "localhost",
-				Address: "localhost",
-				Port:    8080,
-				Secure:  false,
-				Slice:   []string{"3", "2", "1"},
-				InnerStruct: testdata.InnerStruct{
-					Str:  "val",
-					Time: testdata.ParsedTime,
-				},
-			},
-		},
-	}
-
-	for _, test := range tests {
-		test := test
-		t.Run(test.Name, func(t *testing.T) {
-			var buf bytes.Buffer
-			buf.WriteString(test.Data)
-
-			var c testdata.TestConfig
-			require.NoError(t, (loader.Default{}).Load("", &c))
-
-			assert.NoError(t, (loader.Reader{}).LoadReader(&buf, &c))
-
-			assert.Equal(t, test.Result, c)
-		})
-	}
+	err := r.LoadWorkDir("app", &testdata.TestConfig{})
+	assert.True(t, errors.Is(err, os.ErrNotExist))
 }
