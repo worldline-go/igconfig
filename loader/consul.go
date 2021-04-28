@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"path"
 
 	"github.com/hashicorp/go-hclog"
@@ -15,7 +14,6 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/hashicorp/consul/api"
-	"gopkg.in/yaml.v2"
 )
 
 // ConsulConfigPathPrefix specifies prefix for key search.
@@ -52,14 +50,7 @@ type Consul struct {
 	// Please prefer YAML to JSON or anything else if there is no strict requirement for it.
 	//
 	// Note: this function is not used in Watcher.
-	Decoder func(r io.Reader, to interface{}) error
-}
-
-func DefaultDecoder(r io.Reader, to interface{}) error {
-	decoder := yaml.NewDecoder(r)
-	decoder.SetStrict(true)
-
-	return decoder.Decode(to)
+	Decoder Decoder
 }
 
 // Load retrieves data from Consul and decode response into 'to' struct.
