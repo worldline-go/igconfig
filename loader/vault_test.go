@@ -1,10 +1,13 @@
 package loader
 
 import (
+	"context"
 	"os"
 	"strings"
 	"testing"
 	"time"
+
+	consulApi "github.com/hashicorp/consul/api"
 
 	"github.com/hashicorp/vault/api"
 	"github.com/stretchr/testify/assert"
@@ -104,6 +107,63 @@ func TestVault_LoadGeneric(t *testing.T) {
 			Field2: "other",
 		},
 	}, s)
+}
+
+func TestFetchVaultAddrFromConsul(t *testing.T) {
+	cl, err := api.NewClient(&api.Config{})
+	require.NoError(t, err)
+
+	require.NoError(t, FetchVaultAddrFromConsul(cl, func(ctx context.Context, name string, tags []string) ([]*consulApi.ServiceEntry, error) {
+		return []*consulApi.ServiceEntry{
+			{Service: &consulApi.AgentService{Address: "set_me", Port: 9090}},
+		}, nil
+	}))
+
+	assert.Equal(t, "https://set_me:9090", cl.Address())
+}
+
+func TestFetchVaultAddrFromConsul_DoNotUpdate(t *testing.T) {
+	cl, err := api.NewClient(&api.Config{Address: "do_not_change"})
+	require.NoError(t, err)
+
+	require.NoError(t, FetchVaultAddrFromConsul(cl, func(ctx context.Context, name string, tags []string) ([]*consulApi.ServiceEntry, error) {
+		return nil, nil
+	}))
+
+	assert.Equal(t, "do_not_change", cl.Address())
+}
+
+func TestFetchVaultAddrFromConsul_RandomDistribution(t *testing.T) {
+	cl, err := api.NewClient(&api.Config{})
+	require.NoError(t, err)
+
+	distribution := map[string]int{}
+
+	services := []*consulApi.ServiceEntry{
+		{Service: &consulApi.AgentService{Address: "set_me", Port: 9090}},
+		{Service: &consulApi.AgentService{Address: "set_me2", Port: 9090}},
+		{Service: &consulApi.AgentService{Address: "set_me3", Port: 9090}},
+		{Service: &consulApi.AgentService{Address: "set_me4", Port: 9090}},
+		{Service: &consulApi.AgentService{Address: "set_me5", Port: 9090}},
+	}
+
+	const numTimes = 20000
+	for i := 0; i < numTimes; i++ {
+		_ = FetchVaultAddrFromConsul(cl, func(ctx context.Context, name string, tags []string) ([]*consulApi.ServiceEntry, error) {
+			return services, nil
+		})
+
+		distribution[cl.Address()]++
+	}
+
+	require.Len(t, distribution, len(services))
+
+	minPercent := 80.0 / float64(len(services)) // 80 == 100 * 0.8, which means 20% of deviation per option. Chosen arbitrary.
+	// This checks that no one distribution
+	for addr, nums := range distribution {
+		percent := 100 * float64(nums) / numTimes
+		assert.Greater(t, percent, minPercent, "not evenly distributed:", addr)
+	}
 }
 
 func TestSimpleVaultLoad(t *testing.T) {

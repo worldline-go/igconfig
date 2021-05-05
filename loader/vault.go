@@ -1,7 +1,9 @@
 package loader
 
 import (
+	"context"
 	"fmt"
+	"math/rand"
 	"os"
 	"path"
 	"reflect"
@@ -87,6 +89,8 @@ func NewVaulter(addr, token string) (Vaulter, error) {
 // NewVaulterFromEnv creates default Vault client.
 //
 // If VaultRoleIDEnv environment variable is set - also logs in based on role_id and role_secret.
+//
+// See NewVaulterFromClient for more information.
 func NewVaulterFromEnv() (Vaulter, error) {
 	vault, err := api.NewClient(api.DefaultConfig())
 	if err != nil || vault == nil {
@@ -112,6 +116,10 @@ func NewVaulterFromClient(cl *api.Client) (Vaulter, error) {
 		return nil, ErrNoClient
 	}
 
+	if err := FetchVaultAddrFromConsul(cl, (&Consul{}).SearchLiveServices); err != nil {
+		return nil, fmt.Errorf("fetch Vault addr from Consul: %w", err)
+	}
+
 	return cl.Logical(), nil
 }
 
@@ -121,10 +129,10 @@ func SimpleVaultLoad(addr, token, name string, to interface{}) error {
 		return err
 	}
 
-	return Vault{Client: cl}.Load(name, to)
+	return (&Vault{Client: cl}).Load(name, to)
 }
 
-// NewVaulter returns the Vaulter interface. If role_id is given it will call SetTokenAppRole
+// NewVaulterer returns the Vaulter interface. If role_id is given it will call SetTokenAppRole
 // to set the token
 //
 // Example usage:
@@ -151,7 +159,7 @@ func NewVaulterer(addr string, opts ...AuthOption) (loader Loader, err error) {
 		}
 	}
 
-	return Vault{Client: cl.Logical()}, err
+	return &Vault{Client: cl.Logical()}, err
 }
 
 // SetToken sets the token auth method
@@ -188,7 +196,7 @@ func SetAppRole(role, secret string) AuthOption {
 // 'name' is base secret path, or just name of application.
 // Path will be constructed as "${VaultSecretTag}/${name}".
 // By default VaultSecretTag value is "secrets/data", which allows to load secrets from root.
-func (v Vault) Load(appName string, to interface{}) error {
+func (v *Vault) Load(appName string, to interface{}) error {
 	refVal, err := internal.GetReflectElem(to)
 	if err != nil {
 		return err
@@ -202,7 +210,7 @@ func (v Vault) Load(appName string, to interface{}) error {
 }
 
 // LoadGeneric loads generic(shared) secrets from Vault.
-func (v Vault) LoadGeneric(to interface{}) error {
+func (v *Vault) LoadGeneric(to interface{}) error {
 	refVal := reflect.Indirect(reflect.ValueOf(to))
 
 	return v.LoadReflect(getVaultSecretPath(VaultSecretGenericPath), refVal)
@@ -210,7 +218,7 @@ func (v Vault) LoadGeneric(to interface{}) error {
 
 // LoadReflect loads data from secret storage to refVal.
 // It also works for inner structs.
-func (v Vault) LoadReflect(appName string, refVal reflect.Value) error {
+func (v *Vault) LoadReflect(appName string, refVal reflect.Value) error {
 	secretMap, err := v.loadSecretData(appName)
 	if err != nil {
 		return err
@@ -258,7 +266,7 @@ func (v Vault) LoadReflect(appName string, refVal reflect.Value) error {
 	return nil
 }
 
-func (v Vault) loadSecretData(appName string) (map[string]interface{}, error) {
+func (v *Vault) loadSecretData(appName string) (map[string]interface{}, error) {
 	if err := v.EnsureClient(); err != nil {
 		return nil, err
 	}
@@ -300,6 +308,43 @@ func (v *Vault) EnsureClient() error {
 
 	if v.Client == nil {
 		return ErrNoClient
+	}
+
+	return nil
+}
+
+// FetchVaultAddrFromConsul will try to find alive Vault instances in `serviceFetcher`
+// and will set `client` address to random instance.
+// If no instances were found or error happened - nothing will be changed.
+//
+// If address will be changed - it will always be HTTPS.
+func FetchVaultAddrFromConsul(client *api.Client, serviceFetcher LiveServiceFetcher) error {
+	services, err := serviceFetcher(context.Background(), "vault", nil)
+	if err != nil {
+		if internal.IsLocalNetworkError(err) {
+			log.Warn().
+				Str("loader", fmt.Sprintf("%T", (*Vault)(nil))).
+				Msg("local Consul server is not available, skipping fetching Vault address")
+
+			return nil
+		}
+
+		return fmt.Errorf("fetch services: %w", err)
+	}
+
+	if len(services) == 0 {
+		log.Warn().Msg("no healthy Vault services found in Consul, will keep current address")
+
+		return nil
+	}
+	// newRand is necessary to not overwrite global random source,
+	// which could configured in special way.
+	// Plus it removes side effects on rand package.
+	newRand := rand.New(rand.NewSource(time.Now().UnixNano())) //nolint:gosec // No security here, just randomizer.
+	randService := services[newRand.Intn(len(services))].Service
+
+	if err := client.SetAddress(fmt.Sprintf("https://%s:%d", randService.Address, randService.Port)); err != nil {
+		return fmt.Errorf("set address: %w", err)
 	}
 
 	return nil
