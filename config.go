@@ -11,12 +11,12 @@ import (
 )
 
 var DefaultLoaders = [...]loader.Loader{
-	loader.Default{},
-	loader.Consul{},
-	loader.Vault{},
-	loader.Reader{},
-	loader.Env{},
-	loader.Flags{},
+	&loader.Default{},
+	&loader.Consul{},
+	&loader.Vault{},
+	&loader.Reader{},
+	&loader.Env{},
+	&loader.Flags{},
 }
 
 // LoadConfig loads a configuration struct from a fileName, the environment and finally from
