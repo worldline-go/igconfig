@@ -3,13 +3,10 @@ package igconfig
 import (
 	"errors"
 	"fmt"
-	"net"
-	"os"
-	"strings"
-	"syscall"
 
 	"github.com/rs/zerolog/log"
 
+	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/internal"
 	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/loader"
 )
 
@@ -45,25 +42,12 @@ func LoadWithLoaders(appName string, configStruct interface{}, loaders ...loader
 			continue
 		}
 
-		// Check if error is network one.
-		var netErr *net.OpError
-		if errors.As(err, &netErr) {
-			// Check if network error is well-known "Connection Refused"
-			var sErr *os.SyscallError
-			if !errors.As(err, &sErr) || !errors.Is(sErr.Err, syscall.ECONNREFUSED) {
-				// If it is not a connection refused - return it.
-				return err
-			}
+		if internal.IsLocalNetworkError(err) {
+			log.Warn().
+				Str("loader", fmt.Sprintf("%T", configLoader)).
+				Msg("local server is not available, skipping")
 
-			// If host is 127.0.0.1 - it means that no hostname was provided in environment.
-			// Please use "localhost" if you want to receive an error instead.
-			if strings.HasPrefix(netErr.Addr.String(), "127.0.0.1") {
-				log.Warn().
-					Str("loader", fmt.Sprintf("%T", configLoader)).
-					Msg("local server is not available, skipping")
-
-				continue
-			}
+			continue
 		}
 
 		return fmt.Errorf("%T: %w", configLoader, err)
