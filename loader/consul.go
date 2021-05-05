@@ -24,6 +24,11 @@ var ErrNoClient = errors.New("no client available")
 var _ Loader = Consul{}
 var _ DynamicValuer = Consul{}
 
+// LiveServiceFetcher is a signature of the function that will fetch only live instances of the service.
+//
+// If no services found - (nil, nil) will be returned.
+type LiveServiceFetcher func(ctx context.Context, name string, tags []string) ([]*api.ServiceEntry, error)
+
 type Consuler interface {
 	Get(key string, q *api.QueryOptions) (*api.KVPair, *api.QueryMeta, error)
 }
@@ -205,6 +210,23 @@ func (c *Consul) EnsureClient() error {
 	}
 
 	return nil
+}
+
+// SearchLiveServices is a wrapper for c.Client.Health().ServiceMultipleTags(name, tags, true, (&api.QueryOptions{}).WithContext(ctx))
+//
+// This provides a bit nicer interface on fetching services
+// and gives ability to have LiveServiceFetcher as an argument or a field instead of actual implementation.
+func (c *Consul) SearchLiveServices(ctx context.Context, name string, tags []string) ([]*api.ServiceEntry, error) {
+	if err := c.EnsureClient(); err != nil {
+		return nil, err
+	}
+
+	services, _, err := c.Client.Health().ServiceMultipleTags(name, tags, true, (&api.QueryOptions{}).WithContext(ctx))
+	if err != nil {
+		return nil, fmt.Errorf("fetch service instances: %w", err)
+	}
+
+	return services, nil
 }
 
 func NewConsul(addr string) (*api.Client, error) {
