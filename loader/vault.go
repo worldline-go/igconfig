@@ -111,6 +111,9 @@ func NewVaulterFromEnv() (Vaulter, error) {
 	return NewVaulterFromClient(vault)
 }
 
+// NewVaulterFromClient will create a Vaulter client based on input client.
+//
+// This function will try to choose live Vault instance from the Consul.
 func NewVaulterFromClient(cl *api.Client) (Vaulter, error) {
 	if cl == nil {
 		return nil, ErrNoClient
@@ -123,6 +126,9 @@ func NewVaulterFromClient(cl *api.Client) (Vaulter, error) {
 	return cl.Logical(), nil
 }
 
+// SimpleVaultLoad will load secret data based without need to configure everything.
+//
+// Deprecated: Please try to use NewVaulterFromEnv or NewVaulterFromClient to create a client and call Load on it.
 func SimpleVaultLoad(addr, token, name string, to interface{}) error {
 	cl, err := NewVaulter(addr, token)
 	if err != nil {
