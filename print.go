@@ -12,7 +12,10 @@ import (
 
 var _ zerolog.LogObjectMarshaler = Printer{}
 
-const LoggableTagName = "loggable"
+const (
+	LoggableTagName = "loggable"
+	SecretTagName   = "secret"
+)
 
 type NameGetter func(t reflect.StructField) string
 
@@ -66,10 +69,19 @@ func (p Printer) MarshalZerologObject(ev *zerolog.Event) {
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
 
-		b, ok := f.Tag.Lookup(p.LoggableTag)
+		loggable, ok := f.Tag.Lookup(p.LoggableTag)
 
 		// Currently only 'true' is supported as value for LoggableTag
-		if ok && b != "true" {
+		if ok && loggable != "true" {
+			continue
+		}
+
+		_, isSecret := f.Tag.Lookup(SecretTagName)
+
+		// If the tag could potentially be a secret you need to
+		// explicitly state that you want to log it
+		// else the default is not log it.
+		if isSecret && loggable != "true" {
 			continue
 		}
 

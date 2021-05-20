@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"fmt"
 
 	"github.com/stretchr/testify/assert"
 
@@ -17,7 +18,13 @@ type small struct {
 	unexported   string
 	timeField    time.Time
 	Zerolog      *zerologMarshaler
-	NonPrintable string `loggable:"false"`
+	NonPrintable string        `loggable:"false"`
+	NonPrintableSecret string  `secret:"i_like_turtles"`
+}
+
+type Secret struct  {
+	NonPrintableSecret string  `secret:"i_like_turtles"`
+	PrintableSecret    string  `secret:"i_like_turtles" loggable:"true"`
 }
 type withTimeFields struct {
 	Int           int
@@ -60,6 +67,11 @@ func TestPrinter_MarshalZerologObject(t *testing.T) {
 		{
 			Name:   "small",
 			Value:  small{Int1: 3, String: "str", unexported: "test"},
+			Result: `{"int1":3,"string":"str","zerolog":null}`,
+		},
+		{
+			Name:   "dont print secrets",
+			Value:  small{Int1: 3, String: "str", unexported: "test", NonPrintableSecret: "dont_log_me"},
 			Result: `{"int1":3,"string":"str","zerolog":null}`,
 		},
 		{
@@ -127,7 +139,7 @@ func TestPrinter_MarshalZerologObject(t *testing.T) {
 		t.Run(test.Name, func(t *testing.T) {
 			logger.Log().EmbedObject(Printer{LoggableTag: test.LoggableTagName, Value: test.Value}).Send()
 
-			assert.Equal(t, test.Result, strings.TrimSpace(b.String()))
+			assert.Equal(t, test.Result, strings.TrimSpace(b.String()),fmt.Sprintf("test name %s, value %s",test.Name,strings.TrimSpace(b.String())))
 
 			b.Reset()
 		})
@@ -141,3 +153,32 @@ func (e TestError) MarshalText() ([]byte, error) {
 
 	return []byte("valid"), nil
 }
+
+func Test_secret_logging (t *testing.T) {
+	tests := []struct {
+		Name            string
+		LoggableTagName string
+		Value           interface{}
+		Result          string
+	}{
+		{
+			Name:   "to log or not to log",
+			Value:  Secret{PrintableSecret: "log_me", NonPrintableSecret: "dont_log_me"},
+			Result: `{"printablesecret":"log_me"}`,
+		},
+	}
+	var b strings.Builder
+	logger := zerolog.New(&b)
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.Name, func(t *testing.T) {
+			logger.Log().EmbedObject(Printer{LoggableTag: test.LoggableTagName, Value: test.Value}).Send()
+
+			assert.Equal(t, test.Result, strings.TrimSpace(b.String()),fmt.Sprintf("test name %s, value %s",test.Name,strings.TrimSpace(b.String())))
+
+			b.Reset()
+		})
+	}
+}
+
