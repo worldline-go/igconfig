@@ -16,7 +16,7 @@ require (
 	github.com/hashicorp/vault/api v1.1.0
 	github.com/mitchellh/mapstructure v1.3.3 // indirect
 	github.com/pierrec/lz4 v2.6.0+incompatible // indirect
-	github.com/rs/zerolog v1.22.0
+	github.com/rs/zerolog v1.23.0
 	github.com/stretchr/testify v1.7.0
 	golang.org/x/crypto v0.0.0-20201112155050-0c6587e931a9 // indirect
 	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b // indirect
