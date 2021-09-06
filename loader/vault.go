@@ -3,11 +3,10 @@ package loader
 import (
 	"context"
 	"fmt"
+	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/reformat.git"
 	"math/rand"
 	"os"
 	"path"
-	"reflect"
-	"strings"
 	"time"
 
 	"github.com/hashicorp/vault/api"
@@ -35,11 +34,6 @@ var VaultSecretGenericPath = "generic"
 // VaultAppRoleBasePath is the base path for
 // app role authentication.
 var VaultAppRoleBasePath = "auth/approle/login"
-
-// SkipStructTypes specifies types of structs that should be skipped from setting.
-var SkipStructTypes = map[reflect.Type]struct{}{
-	reflect.TypeOf(time.Time{}): {},
-}
 
 type Vaulter interface {
 	Read(path string) (*api.Secret, error)
@@ -203,73 +197,25 @@ func SetAppRole(role, secret string) AuthOption {
 // Path will be constructed as "${VaultSecretTag}/${name}".
 // By default VaultSecretTag value is "secrets/data", which allows to load secrets from root.
 func (v *Vault) Load(appName string, to interface{}) error {
-	refVal, err := internal.GetReflectElem(to)
-	if err != nil {
-		return err
-	}
-
 	if err := v.LoadGeneric(to); err != nil {
 		return err
 	}
 
-	return v.LoadReflect(getVaultSecretPath(appName), refVal)
+	return v.LoadFromReformat(getVaultSecretPath(appName), to)
 }
 
 // LoadGeneric loads generic(shared) secrets from Vault.
 func (v *Vault) LoadGeneric(to interface{}) error {
-	refVal := reflect.Indirect(reflect.ValueOf(to))
-
-	return v.LoadReflect(getVaultSecretPath(VaultSecretGenericPath), refVal)
+	return v.LoadFromReformat(getVaultSecretPath(VaultSecretGenericPath), to)
 }
 
-// LoadReflect loads data from secret storage to refVal.
-// It also works for inner structs.
-func (v *Vault) LoadReflect(appName string, refVal reflect.Value) error {
+func (v *Vault) LoadFromReformat(appName string, to interface{}) error {
 	secretMap, err := v.loadSecretData(appName)
 	if err != nil {
 		return err
 	}
 
-	t := refVal.Type()
-
-	for i := 0; i < t.NumField(); i++ {
-		fieldVal, fieldTyp := refVal.Field(i), t.Field(i)
-
-		if !fieldVal.CanSet() {
-			if v.ErrOnUnsetable {
-				return fmt.Errorf("cannot set field field: %q", fieldTyp.Name)
-			}
-
-			log.Warn().Str("field", fieldTyp.Name).Msg("cannot set field")
-
-			continue
-		}
-
-		tags := internal.TagValue(fieldTyp, VaultSecretTag)
-		if len(tags) == 0 {
-			continue
-		}
-
-		tag := tags[0]
-
-		if fieldTyp.Type.Kind() == reflect.Struct {
-			if _, ok := SkipStructTypes[fieldTyp.Type]; ok {
-				continue
-			}
-
-			if err := v.LoadReflect(appName+"/"+strings.ToLower(tag), fieldVal); err != nil {
-				return fmt.Errorf("inner struct %q error: %w", fieldVal.Type().Name(), err)
-			}
-
-			continue
-		}
-
-		if err := setFieldValue(secretMap[tag], fieldTyp.Name, fieldVal); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return secretDecoder(secretMap, to)
 }
 
 func (v *Vault) loadSecretData(appName string) (map[string]interface{}, error) {
@@ -360,16 +306,21 @@ func getVaultSecretPath(parts ...string) string {
 	return path.Join(append([]string{VaultSecretBasePath}, parts...)...)
 }
 
-// setFieldValue sets value for reflect field.
-func setFieldValue(val interface{}, fieldTypName string, fieldVal reflect.Value) error {
-	if val == nil {
-		return nil
+// secretDecoder implements the reformat package,
+// it exposes functionality to convert an arbitrary map[string]interface{}
+// into a native Go structure.
+func secretDecoder(input, output interface{}) error {
+	cnf := &reformat.DecoderConfig{
+		Metadata:         nil,
+		Result:           output,
+		WeaklyTypedInput: true,
+		TagName: VaultSecretTag,
 	}
 
-	strVal, ok := val.(string)
-	if !ok {
-		strVal = fmt.Sprint(val)
+	decoder, err := reformat.NewDecoder(cnf)
+	if err != nil {
+		return err
 	}
 
-	return internal.SetReflectValueString(fieldTypName, strVal, fieldVal)
+	return decoder.Decode(input)
 }
