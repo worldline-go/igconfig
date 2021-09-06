@@ -2,7 +2,6 @@ package loader
 
 import (
 	"context"
-	"encoding/json"
 	"os"
 	"strings"
 	"testing"
@@ -29,14 +28,17 @@ type testStruct struct {
 }
 
 func TestVault_Load(t *testing.T) {
-	jsonString := []byte("{\n  \"field_1\": \"one\",\n  \"noset\": \"not_empty\",\n  \"other\": {\n    \"field_2\": \"other\"\n  },\n  \"untagged\": 54\n}")
-	secrets := map[string]interface{}{}
-
-	err := json.Unmarshal(jsonString, &secrets)
-	assert.NoError(t,err)
-
 	mock := VaultMock{
-		data: secrets,
+		data: map[string]map[string]interface{}{
+			"test": {
+				"field_1":  "one",
+				"untagged": "54",
+				"noset":    "not_empty",
+			},
+			"test/other": {
+				"field_2": "other",
+			},
+		},
 	}
 
 	v := Vault{
@@ -56,16 +58,14 @@ func TestVault_Load(t *testing.T) {
 }
 
 func TestVault_LoadMissingData(t *testing.T) {
-	jsonString := []byte("{\n  \"field_1\": \"one\",\n  \"untagged\": 54\n}")
-	secrets := map[string]interface{}{}
-
-	err := json.Unmarshal(jsonString, &secrets)
-	assert.NoError(t,err)
-
 	mock := VaultMock{
-		data: secrets,
+		data: map[string]map[string]interface{}{
+			"test": {
+				"field_1":  "one",
+				"untagged": "54",
+			},
+		},
 	}
-
 
 	v := Vault{
 		Client: mock,
@@ -81,14 +81,16 @@ func TestVault_LoadMissingData(t *testing.T) {
 }
 
 func TestVault_LoadGeneric(t *testing.T) {
-	jsonString := []byte("{\n  \"field_1\": \"one\",\n \"other\": {\n    \"field_2\": \"other\"\n  },\n  \"untagged\": 54\n}")
-	secrets := map[string]interface{}{}
-
-	err := json.Unmarshal(jsonString, &secrets)
-	assert.NoError(t,err)
-
 	mock := VaultMock{
-		data: secrets,
+		data: map[string]map[string]interface{}{
+			"generic": {
+				"field_1":  "one",
+				"untagged": "54",
+			},
+			"generic/other": {
+				"field_2": "other",
+			},
+		},
 	}
 
 	v := Vault{
@@ -184,7 +186,7 @@ func TestSimpleVaultLoad(t *testing.T) {
 }
 
 type VaultMock struct {
-	data map[string]interface{}
+	data map[string]map[string]interface{}
 	err  error
 }
 
@@ -195,7 +197,7 @@ func (v VaultMock) Read(path string) (*api.Secret, error) {
 
 	path = strings.TrimPrefix(strings.TrimPrefix(path, VaultSecretBasePath), "/")
 
-	data := v.data
+	data := v.data[path]
 	if data == nil {
 		return nil, nil
 	}
