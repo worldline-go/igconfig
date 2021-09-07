@@ -3,7 +3,6 @@ package loader
 import (
 	"context"
 	"io"
-	"reflect"
 	"time"
 
 	"gopkg.in/yaml.v2"
@@ -40,15 +39,6 @@ type Loader interface {
 	// Even if particular loader type must implement ReflectLoader -
 	// this interface still must be implemented as a proxy.
 	Load(appName string, to interface{}) error
-}
-
-type ReflectLoader interface {
-	// LoadReflect will load all available data to at 'to' value.
-	// 'to' is reflect.Value as it will be easier to get field information from it.
-	//
-	// If unmarshaling is needed it can be done as
-	//  err := json.Unmarshal(data, to.Interface())
-	LoadReflect(appName string, to reflect.Value) error
 }
 
 type DynamicValuer interface {
