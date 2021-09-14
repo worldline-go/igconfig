@@ -8,6 +8,7 @@ import (
 	"path"
 
 	"github.com/hashicorp/go-hclog"
+	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/codec"
 
 	"github.com/hashicorp/consul/api/watch"
 
@@ -55,7 +56,7 @@ type Consul struct {
 	// Please prefer YAML to JSON or anything else if there is no strict requirement for it.
 	//
 	// Note: this function is not used in Watcher.
-	Decoder Decoder
+	Decoder codec.Decoder
 }
 
 // Load retrieves data from Consul and decode response into 'to' struct.
@@ -71,10 +72,10 @@ func (c Consul) Load(appName string, to interface{}) error {
 	}
 
 	if c.Decoder == nil {
-		c.Decoder = DefaultDecoder
+		c.Decoder = codec.YAML{}
 	}
 
-	return c.Decoder(bytes.NewReader(data.Value), to)
+	return c.Decoder.Decode(bytes.NewReader(data.Value), to)
 }
 
 // DynamicValue allows to get dynamically updated values at a runtime.

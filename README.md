@@ -4,7 +4,7 @@
 
 # igconfig package
 
-igconfig package can be used to load configuration values from a configuration file(not by default),
+igconfig package can be used to load configuration values from a configuration file,
 environment variables, Consul, Vault and/or command-line parameters.
 
 ## Requirements
@@ -13,24 +13,29 @@ This package does not require any external packages.
 ## Install
 Add this package to `go.mod`:
 
-```
+```go
 require (
  gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2 latest
 )
 ```
 
+<details><summary>Tests</summary>
+
 ## Unit tests
-```
-cd <reponame>
-go test
+```sh
+go test ./...
 ```
 
 ## Code coverage report (Browser)
+```sh
+mkdir _out
+go test -cover -coverprofile cover.out -outputdir ./_out/ ./...
+go tool cover -html=./_out/cover.out
+# Export HTML
+# go tool cover -html=./_out/cover.out -o ./_out/coverage.html
 ```
-cd <reponame>
-go test -coverprofile=cover.out
-go tool cover -html=cover.out
-```
+
+</details>
 
 ## Description
 There is only a single exported function:
@@ -100,21 +105,6 @@ Below is a sorted list of currently provided loaders that are included by defaul
 ### Default
 This loader uses `default` tag to get value for fields.
 
-### Config file (deprecated, not enabled by default)
-_Deprecated: this Loader is not enabled by default and requires developer action to load data from files.
-Instead, preferred approach is to use Consul+Vault to store configurations._
----
-A config file should contain lines with `key=value` pairs.
-Blank lines and lines that start with `//` or `#` are ignored.
-The key is checked against the exported field names of the config struct and the field tag
-identified by "cfg". The tag may contain a list of names separated by comma's.
-Comparisons are done case-insensitive! 
-If a key is matched, the corresponding field in the struct will be filled with the value
-from the configuration file.
-If a value for a config file is supplied but the file cannot be processed, LoadConfig will
-return the file error, but will process environment variables and command-line parameters
-if requested.
-
 ### Consul
 Loads configuration from Consul and uses YAML to decode data from Consul to a struct.
 
@@ -145,6 +135,19 @@ str:
 Vault loads data from map, and while Vault provides ability to store secrets as "code" 
 this library is not able to decode "code" secrets.
 
+### File
+YAML and JSON files supported, and file path should be located on __CONFIG_FILE__ env variable.  
+If that environment variable not found, file loader check working directory and `/etc` path
+with this formation `<appName>.[yml|yaml|json]`.  
+The appName used as the file name is not the full name, only the part after the last slash.
+So if your app name is `transactions/consumers/internal/apm`,
+the loader will try to load a file with the name `apm`.
+
+The key is checked against the exported field names of the config struct and the field tag
+identified by `cfg`.  
+If a key is matched, the corresponding field in the struct will be filled with the value
+from the configuration file.
+
 ### Environment variables
 For all exported fields from the config struct the name and the field tag identified by "env"
 will be checked if a corresponding environment variable is present. The tag may contain
@@ -167,6 +170,6 @@ Parameters can be supplied on the command-line as described in the standard Go p
 ```
 type MyConfig struct {
     Host string `cfg:"hostname" env:"hostname", cmd:"h,host,hostname" default:"127.0.0.1"`
-    Port uint16 `cfg:"p,port" default:"8080"` // Will also define flags and will search in env based on 'cmd' tag
+    Port uint16 `cfg:"port" default:"8080"` // Will also define flags and will search in env based on 'cmd' tag
 }
 ```

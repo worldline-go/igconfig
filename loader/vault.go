@@ -8,11 +8,10 @@ import (
 	"path"
 	"time"
 
-	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/reformat.git"
-
 	"github.com/hashicorp/vault/api"
 	"github.com/rs/zerolog/log"
 
+	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/codec"
 	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/internal"
 )
 
@@ -216,7 +215,7 @@ func (v *Vault) LoadFromReformat(appName string, to interface{}) error {
 		return err
 	}
 
-	return secretDecoder(secretMap, to)
+	return codec.MapDecoder(secretMap, to, VaultSecretTag)
 }
 
 func (v *Vault) loadSecretData(appName string) (map[string]interface{}, error) {
@@ -305,23 +304,4 @@ func FetchVaultAddrFromConsul(client *api.Client, serviceFetcher LiveServiceFetc
 
 func getVaultSecretPath(parts ...string) string {
 	return path.Join(append([]string{VaultSecretBasePath}, parts...)...)
-}
-
-// secretDecoder implements the reformat package,
-// it exposes functionality to convert an arbitrary map[string]interface{}
-// into a native Go structure.
-func secretDecoder(input, output interface{}) error {
-	cnf := &reformat.DecoderConfig{
-		Metadata:         nil,
-		Result:           output,
-		WeaklyTypedInput: true,
-		TagName:          VaultSecretTag,
-	}
-
-	decoder, err := reformat.NewDecoder(cnf)
-	if err != nil {
-		return fmt.Errorf("could not create new decoder: %w", err)
-	}
-
-	return decoder.Decode(input)
 }

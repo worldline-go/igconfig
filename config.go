@@ -14,7 +14,7 @@ var DefaultLoaders = [...]loader.Loader{
 	&loader.Default{},
 	&loader.Consul{},
 	&loader.Vault{},
-	&loader.Reader{},
+	&loader.File{},
 	&loader.Env{},
 	&loader.Flags{},
 }
@@ -37,7 +37,7 @@ func LoadWithLoaders(appName string, configStruct interface{}, loaders ...loader
 		if errors.Is(err, loader.ErrNoClient) {
 			log.Info().
 				Str("loader", fmt.Sprintf("%T", configLoader)).
-				Msg("no client available, skipping")
+				Msgf("%v, skipping", err)
 
 			continue
 		}
@@ -46,6 +46,14 @@ func LoadWithLoaders(appName string, configStruct interface{}, loaders ...loader
 			log.Warn().
 				Str("loader", fmt.Sprintf("%T", configLoader)).
 				Msg("local server is not available, skipping")
+
+			continue
+		}
+
+		if errors.Is(err, loader.ErrNoConfFile) {
+			log.Info().
+				Str("loader", fmt.Sprintf("%T", configLoader)).
+				Msgf("%v, skipping", err)
 
 			continue
 		}

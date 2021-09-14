@@ -2,20 +2,8 @@ package loader
 
 import (
 	"context"
-	"io"
 	"time"
-
-	"gopkg.in/yaml.v2"
 )
-
-// DefaultDecoder specifies which decoder will be used in specific cases.
-// For example in Consul and Reader.
-var DefaultDecoder Decoder = StrictYamlDecoder
-
-// Decoder is a function that will decode reader `r` into `to`.
-//
-// `to` will already be pointer to struct, so no need to further prepare it for decoding.
-type Decoder func(r io.Reader, to interface{}) error
 
 type DynamicRunner func(value []byte) error
 
@@ -49,12 +37,4 @@ type DynamicValuer interface {
 	//
 	// Error handling should be done in runner function.
 	DynamicValue(ctx context.Context, dynamicConfig DynamicConfig) error
-}
-
-// StrictYamlDecoder is a decoder function.
-func StrictYamlDecoder(r io.Reader, to interface{}) error {
-	decoder := yaml.NewDecoder(r)
-	decoder.SetStrict(true)
-
-	return decoder.Decode(to)
 }
