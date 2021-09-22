@@ -71,6 +71,7 @@ func (f Flags) LoadSlice(to interface{}, args []string) error {
 	}
 
 	it.IteratorFunc = f.ProcessFagsIterator(flags)
+
 	return it.Iterate()
 }
 

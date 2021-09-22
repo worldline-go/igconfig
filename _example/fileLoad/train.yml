@@ -1,0 +1,18 @@
+speed: 10
+ADDRESS: "Hoofddrop"
+bay: 4
+secure: false
+info:
+  train_name: "IN-NS1234"
+  age: 10
+  destination: "Eindhoven"
+InfoStruct:
+  train_name: "Embedded-NS1234"
+  testing: "testX"
+  # TesTing: "testY"
+  tesTing: "testZ"
+  # DoubleName: "textD"
+  # doubleName: "textD"
+  doublename: "textD"
+extra:
+  new: "Extra data ignore"

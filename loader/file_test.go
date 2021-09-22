@@ -21,7 +21,7 @@ func TestFile_Load_EnvFile(t *testing.T) {
 salary: 112.34
 host: example.com
 innerstruct:
-  str: test_me`
+  string: test_me`
 
 	f, err := os.CreateTemp("", "*.yaml")
 	require.NoError(t, err)
@@ -41,13 +41,13 @@ innerstruct:
 	assert.Equal(t, testdata.TestConfig{
 		Salary:      112.34,
 		Host:        "example.com",
-		InnerStruct: testdata.InnerStruct{Str: ""},
+		InnerStruct: testdata.InnerStruct{Str: "test_me"},
 	}, c)
 
 	data_ugly := `salary 32131
 host: dontuseme.com
 innerstruct
-  str: test_me`
+  string: test_me`
 
 	_, err = f.WriteString(data_ugly)
 	require.NoError(t, err)
@@ -60,7 +60,7 @@ func TestFile_LoadWorkDir(t *testing.T) {
 salary: 112.34
 host: example.com
 innerstruct:
-  str: test_me`
+  string: test_me`
 
 	wd, _ := os.Getwd()
 	f, err := os.Create(path.Join(wd, "app.yaml"))
@@ -78,7 +78,7 @@ innerstruct:
 	assert.Equal(t, testdata.TestConfig{
 		Salary:      112.34,
 		Host:        "example.com",
-		InnerStruct: testdata.InnerStruct{Str: ""},
+		InnerStruct: testdata.InnerStruct{Str: "test_me"},
 	}, c)
 }
 
@@ -94,7 +94,7 @@ func TestFile_CHECK_ETC(t *testing.T) {
 salary: 999.9
 host: exampleetc.com
 innerstruct:
-  str: test_me_ETC`
+  string: test_me_ETC`
 
 	fEtc, err := os.CreateTemp("", "*.yaml")
 	require.NoError(t, err)
@@ -114,7 +114,7 @@ innerstruct:
 	assert.Equal(t, testdata.TestConfig{
 		Salary:      999.9,
 		Host:        "exampleetc.com",
-		InnerStruct: testdata.InnerStruct{Str: ""},
+		InnerStruct: testdata.InnerStruct{Str: "test_me_ETC"},
 	}, c)
 
 	c = testdata.TestConfig{}
@@ -136,7 +136,7 @@ func TestFile_CHECK_ORDER(t *testing.T) {
 "salary": 999.9,
 "host": "exampleetc.com",
 "innerstruct": {
-    "str": "test_me_ETC"
+    "string": "test_me_ETC"
   }
 }`
 
@@ -150,7 +150,7 @@ func TestFile_CHECK_ORDER(t *testing.T) {
 	data := `salary: 112.34
 host: example.com
 innerstruct:
-  str: test_me`
+  string: test_me`
 
 	wd, _ := os.Getwd()
 	fWork, err := os.Create(path.Join(wd, "app.yaml"))
@@ -168,7 +168,7 @@ innerstruct:
 	assert.Equal(t, testdata.TestConfig{
 		Salary:      112.34,
 		Host:        "example.com",
-		InnerStruct: testdata.InnerStruct{Str: ""},
+		InnerStruct: testdata.InnerStruct{Str: "test_me"},
 	}, c)
 
 	os.Setenv(loader.EnvConfigFile, fEtc.Name())
@@ -179,7 +179,7 @@ innerstruct:
 	assert.Equal(t, testdata.TestConfig{
 		Salary:      999.9,
 		Host:        "exampleetc.com",
-		InnerStruct: testdata.InnerStruct{Str: ""},
+		InnerStruct: testdata.InnerStruct{Str: "test_me_ETC"},
 	}, c)
 }
 

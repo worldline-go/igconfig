@@ -7,14 +7,12 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/hashicorp/go-hclog"
 	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/codec"
 
-	"github.com/hashicorp/consul/api/watch"
-
-	"github.com/rs/zerolog/log"
-
 	"github.com/hashicorp/consul/api"
+	"github.com/hashicorp/consul/api/watch"
+	"github.com/hashicorp/go-hclog"
+	"github.com/rs/zerolog/log"
 )
 
 // ConsulConfigPathPrefix specifies prefix for key search.
@@ -23,6 +21,7 @@ var ConsulConfigPathPrefix = "finops"
 var ErrNoClient = errors.New("no client available")
 
 var _ Loader = Consul{}
+
 var _ DynamicValuer = Consul{}
 
 // LiveServiceFetcher is a signature of the function that will fetch only live instances of the service.
@@ -172,7 +171,7 @@ func (c Consul) DynamicValue(ctx context.Context, config DynamicConfig) error {
 	}
 
 	chanRun := func() <-chan error {
-		var ch = make(chan error)
+		ch := make(chan error)
 
 		go func() {
 			ch <- plan.RunWithClientAndHclog(c.Client, hclog.NewNullLogger())

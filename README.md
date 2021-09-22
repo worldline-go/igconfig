@@ -19,6 +19,18 @@ require (
 )
 ```
 
+<details><summary>Example Usage</summary>
+
+Check **_example** folder and look to usage.  
+To run and test it:
+
+```sh
+cd _example/fileLoad
+go run main.go
+```
+
+</details>
+
 <details><summary>Tests</summary>
 
 ## Unit tests
@@ -30,6 +42,7 @@ go test ./...
 ```sh
 mkdir _out
 go test -cover -coverprofile cover.out -outputdir ./_out/ ./...
+# Auto open html result
 go tool cover -html=./_out/cover.out
 # Export HTML
 # go tool cover -html=./_out/cover.out -o ./_out/coverage.html
@@ -83,7 +96,8 @@ As such defining only this tag can be enough for most situations.
 `cmd` tag is used to set flag names for fields.
 
 #### secret
-`secret` tag specifies name of field in Vault that should be used to fill the field.
+`secret` tag specifies name of field in Vault that should be used to fill the field.  
+If not exist it use as struct's field name.
 
 #### default
 `default` is special tag.
@@ -107,6 +121,25 @@ This loader uses `default` tag to get value for fields.
 
 ### Consul
 Loads configuration from Consul and uses YAML to decode data from Consul to a struct.
+
+Default configuration is `127.0.0.1:8500` with `http` protocol.
+
+For connection to Consul server you need to set some of environment variables.
+
+| Envrionment variable | Meaning
+| --- | --- |
+| CONSUL_HTTP_ADDR | Ex: `consul:8500`, sets the HTTP address |
+| CONSUL_HTTP_TOKEN_FILE | sets the HTTP token file |
+| CONSUL_HTTP_TOKEN | sets the HTTP token |
+| CONSUL_HTTP_AUTH | Ex: `username:password`, sets the HTTP authentication header |
+| CONSUL_HTTP_SSL | Ex: `true`, sets whether or not to use HTTPS |
+| CONSUL_TLS_SERVER_NAME | sets the server name to use as the SNI host when connecting via TLS |
+| CONSUL_CACERT | sets the CA file to use for talking to Consul over TLS |
+| CONSUL_CAPATH | sets the path to a directory of CA certs to use for talking to Consul over TLS |
+| CONSUL_CLIENT_CERT | sets the client cert file to use for talking to Consul over TLS |
+| CONSUL_CLIENT_KEY | sets the client key file to use for talking to Consul over TLS. |
+| CONSUL_HTTP_SSL_VERIFY | Ex: `false`, sets whether or not to disable certificate checking |
+| CONSUL_NAMESPACE | sets the HTTP Namespace to be used by default. This can still be overridden |
 
 While it is possible to change decoder from YAML to JSON for example it is not recommended 
 if there are no objective reasons to do so. YAML is superior to JSON in terms of readability 
@@ -135,18 +168,46 @@ str:
 Vault loads data from map, and while Vault provides ability to store secrets as "code" 
 this library is not able to decode "code" secrets.
 
+First Vault loads in `finops/data/generic` path and after that process application's configuration in `finops/data/<appname>` path.
+
+Default server address is `https://127.0.0.1:8200`.
+
+| Envrionment Variable | Meaning
+| --- | --- |
+| VAULT_ADDR |  the address of the Vault server. This should be a complete URL such as "http://vault.example.com". If you need a custom SSL cert or want to enable insecure mode, you need to specify a custom HttpClient. |
+| VAULT_AGENT_ADDR | the address of the local Vault agent. This should be a complete URL such as "http://vault.example.com". |
+| VAULT_MAX_RETRIES |  controls the maximum number of times to retry when a 5xx error occurs. Set to 0 to disable retrying. Defaults to 2 (for a total of three tries).  |
+| VAULT_RATE_LIMIT | EX: `rateFloat:brustInt` |
+| VAULT_CLIENT_TIMEOUT | seconds |
+| VAULT_SRV_LOOKUP | enables the client to lookup the host through DNS SRV lookup |
+| VAULT_CACERT | TLS  |
+| VAULT_CAPATH | TLS |
+| VAULT_CLIENT_CERT | TLS |
+| VAULT_CAPATH | TLS |
+| VAULT_CLIENT_CERT | TLS |
+| VAULT_CLIENT_KEY | TLS |
+| VAULT_TLS_SERVER_NAME | TLS |
+| VAULT_SKIP_VERIFY | TLS |
+
+For authentication path is `auth/approle/login` and you should set additional envrionment values to get data.
+
+`VAULT_ROLE_ID` and `VAULT_ROLE_SECRET` environment variables.
+
 ### File
 YAML and JSON files supported, and file path should be located on __CONFIG_FILE__ env variable.  
 If that environment variable not found, file loader check working directory and `/etc` path
-with this formation `<appName>.[yml|yaml|json]`.  
+with this formation `<appName>.[yml|yaml|json]` (if you have same `appName` with different suffixes, order is `yml > yaml > json`).  
 The appName used as the file name is not the full name, only the part after the last slash.
-So if your app name is `transactions/consumers/internal/apm`,
+So if your app name is `transactions/consumers/internal/apm/`,
 the loader will try to load a file with the name `apm`.
 
 The key is checked against the exported field names of the config struct and the field tag
 identified by `cfg`.  
 If a key is matched, the corresponding field in the struct will be filled with the value
 from the configuration file.
+
+__NOTE:__ if `cfg` tag not exists, it is still read values in file and match struct's field name!  
+Don't want to read a value just delete it in your config file or add `cfg:"-"`.
 
 ### Environment variables
 For all exported fields from the config struct the name and the field tag identified by "env"
@@ -167,7 +228,8 @@ For all other field types the command-line parameter should have a compatible va
 Parameters can be supplied on the command-line as described in the standard Go package "flag".
 
 ### Example config struct
-```
+
+```go
 type MyConfig struct {
     Host string `cfg:"hostname" env:"hostname", cmd:"h,host,hostname" default:"127.0.0.1"`
     Port uint16 `cfg:"port" default:"8080"` // Will also define flags and will search in env based on 'cmd' tag
