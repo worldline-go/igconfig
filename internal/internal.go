@@ -11,9 +11,11 @@ const DefaultConfigTag = "cfg"
 const SkipFieldTagValue = "-"
 
 var ErrInputIsNotPointerOrStruct = errors.New("input value is not struct or not pointer")
+
 var ErrNoIterValue = errors.New("no value to iterate")
 
 type FieldNameFunc func(outerName string, currentField reflect.StructField) string
+
 type IteratorFunc func(fieldName string, field reflect.Value) error
 
 // StructIterator allows to traverse structures and call predefined function on each field.
@@ -195,13 +197,14 @@ func TagValue(field reflect.StructField, key string) []string {
 // If no tag found - nil is returned.
 func TagValueByKeys(tag reflect.StructTag, keys ...string) []string {
 	var tagValue string
+
 	var ok bool
+
 	for _, tagName := range keys {
 		tagValue, ok = tag.Lookup(tagName)
 		if ok {
 			break
 		}
-
 	}
 
 	if !ok {
@@ -211,7 +214,7 @@ func TagValueByKeys(tag reflect.StructTag, keys ...string) []string {
 	return strings.Split(tagValue, ",")
 }
 
-// IsTagSkip returns true if tag value was exactly "-"
+// IsTagSkip returns true if tag value was exactly "-".
 func IsTagSkip(tagVals []string) bool {
 	if len(tagVals) != 1 {
 		return false

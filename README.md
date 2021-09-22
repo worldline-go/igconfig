@@ -78,7 +78,6 @@ field's type, an error will be returned.
 
 Config struct can have inner structs as a fields, but not all Loaders might support them.
 For example Consul and Vault support inner structs, while Env and Flags don't.
-This will be shown later.  
 
 ### Tags
 Config structs can have special tags for fine-grained field name configuration.

@@ -53,6 +53,7 @@ var typeMap = map[reflect.Type]TypeSetter{
 var typeMapMu sync.RWMutex
 
 var TimeType = reflect.TypeOf(time.Time{})
+
 var unmarshalTextType = reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem()
 
 // isTrue compares a string to determine the boolean value.
@@ -123,6 +124,7 @@ func SetStructFieldValue(fieldName, v string, strct reflect.Value) error {
 // custom setter function will take priority.
 func SetReflectValueString(fieldName, v string, val reflect.Value) error {
 	const valueMsg = "value for val %q not a valid %q"
+
 	val = reflect.Indirect(val)
 
 	kindName := val.Type().String()
@@ -171,7 +173,7 @@ func SetReflectValueString(fieldName, v string, val reflect.Value) error {
 // TypeImplementsInterface checks if provided value's type,
 // or pointer(if possible to make pointer) to it's type implements specified interface type.
 //
-// interfaceType can be created as reflect.TypeOf((*interface{})(nil)).Elem().
+// Argument interfaceType can be created as reflect.TypeOf((*interface{})(nil)).Elem().
 func TypeImplementsInterface(val reflect.Value, interfaceType reflect.Type) reflect.Value {
 	if val.Type().Implements(interfaceType) {
 		return val

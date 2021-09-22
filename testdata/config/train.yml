@@ -8,9 +8,11 @@ info:
   destination: "Eindhoven"
 InfoStruct:
   train_name: "Embedded-NS1234"
+  # WARNING RANDOM GETS IF SAME KEY EXISTS
+  # testing | TesTing | tesTing are same for Testing | TesTing fields in struct
   testing: "testX"
   # TesTing: "testY"
-  tesTing: "testZ"
+  # tesTing: "testZ"
   # DoubleName: "textD"
   # doubleName: "textD"
   doublename: "textD"
