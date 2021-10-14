@@ -1,0 +1,5 @@
+{
+  "ssobaseurl": "http://keycloak.test.igdcs.com/",
+  "ssopubkeyid": "keyid1234",
+  "ssorealm": "finops"
+}

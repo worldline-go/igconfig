@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"path"
 
 	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/codec"
@@ -58,13 +59,14 @@ type Consul struct {
 	Decoder codec.Decoder
 }
 
-// Load retrieves data from Consul and decode response into 'to' struct.
-func (c Consul) Load(appName string, to interface{}) error {
+// LoadWithContext retrieves data from Consul and decode response into 'to' struct.
+func (c Consul) LoadWithContext(ctx context.Context, appName string, to interface{}) error {
 	if err := c.EnsureClient(); err != nil {
 		return err
 	}
 
-	data, _, err := c.Client.KV().Get(getConsulConfigPath(appName), nil)
+	queryOptions := api.QueryOptions{}
+	data, _, err := c.Client.KV().Get(getConsulConfigPath(appName), queryOptions.WithContext(ctx))
 	// If no data or err is returned - return early.
 	if data == nil || err != nil {
 		return err
@@ -75,6 +77,11 @@ func (c Consul) Load(appName string, to interface{}) error {
 	}
 
 	return c.Decoder.Decode(bytes.NewReader(data.Value), to)
+}
+
+// Load is just same as LoadWithContext without context.
+func (c Consul) Load(appName string, to interface{}) error {
+	return c.LoadWithContext(context.Background(), appName, to)
 }
 
 // DynamicValue allows to get dynamically updated values at a runtime.
@@ -163,7 +170,7 @@ func (c Consul) DynamicValue(ctx context.Context, config DynamicConfig) error {
 			}
 		}
 
-		if execErr := executeRunner(config.FieldName, data, config.Runner); execErr != nil {
+		if execErr := executeRunner(watchCtx, config.FieldName, data, config.Runner); execErr != nil {
 			handlerErr = execErr
 
 			stopWatcher()
@@ -238,6 +245,11 @@ func NewConsul(addr string) (*api.Client, error) {
 // This function uses api.DefatulConfig(), which means that variables should be named as Consul expects them.
 // For example now CONSUL_ADDR should be set as CONSUL_HTTP_ADDR.
 func NewConsulFromEnv() (*api.Client, error) {
+	// for fast approach, if not exist pass
+	if _, ok := os.LookupEnv("CONSUL_HTTP_ADDR"); !ok {
+		return nil, fmt.Errorf("CONSUL_HTTP_ADDR not exist, err: %w", ErrNoClient)
+	}
+
 	return NewConsulWithConfig(api.DefaultConfig())
 }
 
@@ -255,10 +267,8 @@ func getConsulConfigPath(parts ...string) string {
 	return path.Join(append([]string{ConsulConfigPathPrefix}, parts...)...)
 }
 
-func executeRunner(keyPath string, newValue []byte, runner DynamicRunner) error {
-	if l := log.Debug(); l.Enabled() {
-		l.Str("key_path", keyPath).Msg("new dynamic value received")
-	}
+func executeRunner(ctx context.Context, keyPath string, newValue []byte, runner DynamicRunner) error {
+	log.Ctx(ctx).Debug().Str("key_path", keyPath).Msg("new dynamic value received")
 
 	return runner(newValue)
 }

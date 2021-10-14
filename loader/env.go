@@ -1,6 +1,7 @@
 package loader
 
 import (
+	"context"
 	"os"
 	"reflect"
 	"strings"
@@ -20,9 +21,9 @@ const EnvTag = "env"
 // Breaking change from v1: variable name will be upper-cased when doing lookup. No other cases are checked.
 type Env struct{}
 
-// Load implementation for Env ignores variable name prefix.
+// LoadWithContext implementation for Env ignores variable name prefix.
 // We want to load env vars without Vault like prefix.
-func (e Env) Load(_ string, to interface{}) error {
+func (e Env) LoadWithContext(_ context.Context, _ string, to interface{}) error {
 	it := internal.StructIterator{
 		Value:         to,
 		FieldNameFunc: e.FieldNameFunc,
@@ -30,6 +31,11 @@ func (e Env) Load(_ string, to interface{}) error {
 	}
 
 	return it.Iterate()
+}
+
+// Load is just same as LoadWithContext without context.
+func (e Env) Load(_ string, to interface{}) error {
+	return e.LoadWithContext(context.TODO(), "", to)
 }
 
 // FieldNameFunc returns a field function which will get name from `env` tag,

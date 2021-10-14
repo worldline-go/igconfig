@@ -9,7 +9,7 @@ import (
 
 type LogicReader func(string) (*api.Secret, error)
 
-// Database returns usable path to get database lease path for specified role
+// Database returns usable path to get database lease path for specified role.
 func Database(role string) string {
 	return path.Join("database/creds", role)
 }
@@ -19,10 +19,10 @@ func Database(role string) string {
 // This could be used to get normal credentials and also lease them.
 // If secret should be renewed - please use KeepRenewed function.
 //
-// path is Vaults path that should return secret when it is read.
+// 'pth' is Vaults path that should return secret when it is read.
 // For example any secret engine.
 //
-// Argument 'path' can be constructed with provided functions, for example Database.
+// Argument 'pth' can be constructed with provided functions, for example Database.
 //
 // Example:
 //	s, err := GetCredentials(Database("test_app_recon"))
@@ -36,13 +36,13 @@ func Database(role string) string {
 //	go KeepRenewed(ctx, cl, s) // 'cl' is *vault/api.Client
 //
 //	// Now secret 's' will be valid for as long as context is not canceled.
-func GetCredentials(path string) (*api.Secret, error) {
+func GetCredentials(pth string) (*api.Secret, error) {
 	cl, err := api.NewClient(api.DefaultConfig())
 	if err != nil {
 		return nil, err
 	}
 
-	return GetCredentialsWithClient(cl, path)
+	return GetCredentialsWithClient(cl, pth)
 }
 
 // GetCredentialsWithClient
@@ -52,15 +52,15 @@ func GetCredentials(path string) (*api.Secret, error) {
 // Renew will stop when context will be canceled.
 // If context is canceled before renew would be started(for example canceled context was passed in this function) -
 // renew will not kick in. Secret will be retrieved and returned without starting renewal process.
-func GetCredentialsWithClient(cl *api.Client, path string) (*api.Secret, error) {
-	return GetCredentialsWithReader(cl.Logical().Read, path)
+func GetCredentialsWithClient(cl *api.Client, pth string) (*api.Secret, error) {
+	return GetCredentialsWithReader(cl.Logical().Read, pth)
 }
 
 // GetCredentialsWithReader uses provided reader to retrieve leased secret from specified path.
 //
 // In general case use GetCredentials.
-func GetCredentialsWithReader(reader LogicReader, path string) (*api.Secret, error) {
-	return reader(path)
+func GetCredentialsWithReader(reader LogicReader, pth string) (*api.Secret, error) {
+	return reader(pth)
 }
 
 // KeepRenewed will keep secret valid until context will be canceled or error happens.
@@ -83,7 +83,7 @@ func KeepRenewed(ctx context.Context, cl *api.Client, secret *api.Secret) error 
 	default:
 	}
 
-	renewer, err := cl.NewRenewer(&api.RenewerInput{
+	renewer, err := cl.NewLifetimeWatcher(&api.RenewerInput{
 		Secret: secret,
 	})
 	if err != nil {

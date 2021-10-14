@@ -1,6 +1,7 @@
 package igconfig
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -19,23 +20,37 @@ var DefaultLoaders = [...]loader.Loader{
 	&loader.Flags{},
 }
 
-// LoadConfig loads a configuration struct from a fileName, the environment and finally from
-// command-line parameters (the latter override the former) into a config struct.
-// This is a convenience function encapsulating all individual loaders specified in DefaultLoaders.
 func LoadConfig(appName string, c interface{}) error {
-	return LoadWithLoaders(appName, c, DefaultLoaders[:]...)
+	return LoadConfigWithContext(context.Background(), appName, c)
 }
 
-// LoadWithLoaders uses provided Loader's to fill 'configStruct'.
+// LoadConfigWithContext loads a configuration struct from a fileName, the environment and finally from
+// command-line parameters (the latter override the former) into a config struct.
+// This is a convenience function encapsulating all individual loaders specified in DefaultLoaders.
+func LoadConfigWithContext(ctx context.Context, appName string, c interface{}) error {
+	return LoadWithLoadersWithContext(ctx, appName, c, DefaultLoaders[:]...)
+}
+
 func LoadWithLoaders(appName string, configStruct interface{}, loaders ...loader.Loader) error {
+	return LoadWithLoadersWithContext(context.Background(), appName, configStruct, loaders...)
+}
+
+// LoadWithLoadersWithContext uses provided Loader's to fill 'configStruct'.
+func LoadWithLoadersWithContext(ctx context.Context, appName string, configStruct interface{}, loaders ...loader.Loader) error {
 	for _, configLoader := range loaders {
-		err := configLoader.Load(appName, configStruct)
+		select {
+		case <-ctx.Done():
+			return nil
+		default:
+		}
+
+		err := configLoader.LoadWithContext(ctx, appName, configStruct)
 		if err == nil {
 			continue
 		}
 
 		if errors.Is(err, loader.ErrNoClient) {
-			log.Info().
+			log.Ctx(ctx).Warn().
 				Str("loader", fmt.Sprintf("%T", configLoader)).
 				Msgf("%v, skipping", err)
 
@@ -43,7 +58,7 @@ func LoadWithLoaders(appName string, configStruct interface{}, loaders ...loader
 		}
 
 		if internal.IsLocalNetworkError(err) {
-			log.Warn().
+			log.Ctx(ctx).Warn().
 				Str("loader", fmt.Sprintf("%T", configLoader)).
 				Msg("local server is not available, skipping")
 
@@ -51,7 +66,7 @@ func LoadWithLoaders(appName string, configStruct interface{}, loaders ...loader
 		}
 
 		if errors.Is(err, loader.ErrNoConfFile) {
-			log.Info().
+			log.Ctx(ctx).Warn().
 				Str("loader", fmt.Sprintf("%T", configLoader)).
 				Msgf("%v, skipping", err)
 

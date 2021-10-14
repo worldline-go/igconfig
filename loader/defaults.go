@@ -1,6 +1,7 @@
 package loader
 
 import (
+	"context"
 	"reflect"
 	"strings"
 
@@ -13,8 +14,8 @@ const DefaultTag = "default"
 
 type Default struct{}
 
-// Load loads the config struct fields with their default value as defined in the tags.
-func (d Default) Load(_ string, to interface{}) error {
+// LoadWithContext loads the config struct fields with their default value as defined in the tags.
+func (d Default) LoadWithContext(_ context.Context, _ string, to interface{}) error {
 	it := internal.StructIterator{
 		Value:         to,
 		NoUpdate:      true,
@@ -23,6 +24,11 @@ func (d Default) Load(_ string, to interface{}) error {
 	}
 
 	return it.Iterate()
+}
+
+// Load is just same as LoadWithContext without context.
+func (d Default) Load(_ string, to interface{}) error {
+	return d.LoadWithContext(context.TODO(), "", to)
 }
 
 // FieldNameFunc defined field retrieval function for Default loader.

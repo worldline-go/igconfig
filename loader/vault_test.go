@@ -38,7 +38,9 @@ func TestVault_Load(t *testing.T) {
 	}
 
 	mock := VaultMock{
-		data: secrets,
+		data: map[string]interface{}{
+			"data/generic": secrets,
+		},
 	}
 
 	v := Vault{
@@ -64,7 +66,9 @@ func TestVault_LoadMissingData(t *testing.T) {
 	}
 
 	mock := VaultMock{
-		data: secrets,
+		data: map[string]interface{}{
+			"data/generic": secrets,
+		},
 	}
 
 	v := Vault{
@@ -90,7 +94,9 @@ func TestVault_LoadGeneric(t *testing.T) {
 	}
 
 	mock := VaultMock{
-		data: secrets,
+		data: map[string]interface{}{
+			"data/generic": secrets,
+		},
 	}
 
 	v := Vault{
@@ -99,7 +105,7 @@ func TestVault_LoadGeneric(t *testing.T) {
 
 	var s testStruct
 
-	assert.NoError(t, v.LoadGeneric(&s))
+	assert.NoError(t, v.LoadGeneric(context.Background(), &s))
 	assert.Equal(t, testStruct{
 		Field1:   "one",
 		Untagged: 54,
@@ -109,11 +115,68 @@ func TestVault_LoadGeneric(t *testing.T) {
 	}, s)
 }
 
+func TestVault_LoadList(t *testing.T) {
+	keycloak := map[string]interface{}{
+		"field_1": "one",
+		"other": map[string]interface{}{
+			"field_2": "other",
+		},
+		"untagged": 54,
+	}
+
+	gen := map[string]interface{}{
+		"field_1": "two",
+		"other": map[string]interface{}{
+			"field_2": "other2",
+		},
+		"untagged": 77,
+	}
+
+	mock := VaultMock{
+		data: map[string]interface{}{
+			"data/generic/keycloak": keycloak,
+			"data/generic/gen":      gen,
+		},
+		list: map[string][]interface{}{
+			"metadata/generic": {"keycloak", "gen"},
+		},
+	}
+
+	v := Vault{
+		Client: mock,
+	}
+
+	type structRest struct {
+		Gen      testStruct
+		Keycloak testStruct
+	}
+
+	s := structRest{}
+
+	assert.NoError(t, v.LoadGeneric(context.Background(), &s))
+	assert.Equal(t, structRest{
+		Keycloak: testStruct{
+			Field1: "one",
+			Inner: inner{
+				Field2: "other",
+			},
+			Untagged: 54,
+		},
+		Gen: testStruct{
+			Field1: "two",
+			Inner: inner{
+				Field2: "other2",
+			},
+			Untagged: 77,
+		},
+	}, s)
+}
+
 func TestFetchVaultAddrFromConsul(t *testing.T) {
 	cl, err := api.NewClient(&api.Config{})
 	require.NoError(t, err)
 
-	require.NoError(t, FetchVaultAddrFromConsul(cl, func(ctx context.Context, name string, tags []string) ([]*consulApi.ServiceEntry, error) {
+	require.NoError(t, FetchVaultAddrFromConsul(context.Background(), cl, func(ctx context.Context, name string, tags []string) ([]*consulApi.ServiceEntry, error) {
 		return []*consulApi.ServiceEntry{
 			{Service: &consulApi.AgentService{Address: "set_me", Port: 9090}},
 		}, nil
@@ -126,7 +189,7 @@ func TestFetchVaultAddrFromConsul_DoNotUpdate(t *testing.T) {
 	cl, err := api.NewClient(&api.Config{Address: "do_not_change"})
 	require.NoError(t, err)
 
-	require.NoError(t, FetchVaultAddrFromConsul(cl, func(ctx context.Context, name string, tags []string) ([]*consulApi.ServiceEntry, error) {
+	require.NoError(t, FetchVaultAddrFromConsul(context.Background(), cl, func(ctx context.Context, name string, tags []string) ([]*consulApi.ServiceEntry, error) {
 		return nil, nil
 	}))
 
@@ -149,7 +212,7 @@ func TestFetchVaultAddrFromConsul_RandomDistribution(t *testing.T) {
 
 	const numTimes = 20000
 	for i := 0; i < numTimes; i++ {
-		_ = FetchVaultAddrFromConsul(cl, func(ctx context.Context, name string, tags []string) ([]*consulApi.ServiceEntry, error) {
+		_ = FetchVaultAddrFromConsul(context.Background(), cl, func(ctx context.Context, name string, tags []string) ([]*consulApi.ServiceEntry, error) {
 			return services, nil
 		})
 
@@ -187,6 +250,7 @@ func TestSimpleVaultLoad(t *testing.T) {
 
 type VaultMock struct {
 	data map[string]interface{}
+	list map[string][]interface{}
 	err  error
 }
 
@@ -197,8 +261,8 @@ func (v VaultMock) Read(path string) (*api.Secret, error) {
 
 	path = strings.TrimPrefix(strings.TrimPrefix(path, VaultSecretBasePath), "/")
 
-	data := v.data
-	if data == nil {
+	data, ok := v.data[path]
+	if !ok {
 		return nil, nil
 	}
 
@@ -209,6 +273,21 @@ func (v VaultMock) Read(path string) (*api.Secret, error) {
 	}
 
 	return &secret, nil
+}
+
+func (v VaultMock) List(path string) (*api.Secret, error) {
+	path = strings.TrimPrefix(strings.TrimPrefix(path, VaultSecretBasePath), "/")
+
+	if keys, ok := v.list[path]; ok {
+
+		return &api.Secret{
+			Data: map[string]interface{}{
+				"keys": keys,
+			},
+		}, nil
+	}
+
+	return nil, nil
 }
 
 func TestNewVaulterer_RoleID(t *testing.T) {

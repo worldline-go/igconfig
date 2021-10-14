@@ -2,5 +2,4 @@
 *.lock
 vendor/
 cover.out
-.idea/
 /_out/

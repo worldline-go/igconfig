@@ -119,9 +119,9 @@ Below is a sorted list of currently provided loaders that are included by defaul
 This loader uses `default` tag to get value for fields.
 
 ### Consul
-Loads configuration from Consul and uses YAML to decode data from Consul to a struct.
+Loads configuration from Consul and uses YAML decoder to decode data from Consul to a struct.
 
-Default configuration is `127.0.0.1:8500` with `http` protocol.
+If you not give `CONSUL_HTTP_ADDR` as environment variable, this config will skip!
 
 For connection to Consul server you need to set some of environment variables.
 
@@ -164,15 +164,19 @@ str:
 ```
 
 ### Vault
-Vault loads data from map, and while Vault provides ability to store secrets as "code" 
-this library is not able to decode "code" secrets.
+Loads configuration from Vault and uses MapDecoder to decode data from Vault to a struct.
 
 First Vault loads in `finops/data/generic` path and after that process application's configuration in `finops/data/<appname>` path.
 
-Default server address is `https://127.0.0.1:8200`.
+`generic` path can have inner path, vault loader combine them.
+
+If you not give any of `VAULT_ADDR`, `VAULT_AGENT_ADDR` or `CONSUL_HTTP_ADDR` as environment variable, this config will skip!
+
+If `CONSUL_HTTP_ADDR` exists, it uses Consul to get vault address.
 
 | Envrionment Variable | Meaning
 | --- | --- |
+| CONSUL_HTTP_ADDR | get VAULT_ADDR from this consul server with vault service tag name. |
 | VAULT_ADDR |  the address of the Vault server. This should be a complete URL such as "http://vault.example.com". If you need a custom SSL cert or want to enable insecure mode, you need to specify a custom HttpClient. |
 | VAULT_AGENT_ADDR | the address of the local Vault agent. This should be a complete URL such as "http://vault.example.com". |
 | VAULT_MAX_RETRIES |  controls the maximum number of times to retry when a 5xx error occurs. Set to 0 to disable retrying. Defaults to 2 (for a total of three tries).  |
@@ -216,6 +220,27 @@ even if tag specifies lower- or mixed-case.
 Once a match is found the value from the corresponding environment variable is placed
 in the struct field, and no further comparisons will be done for that field.
 
+If you want to set value in inner struct:
+```go
+type Config struct {
+    Inner Inner
+}
+
+type Inner struct {
+	GetENV       string `env:"TEST_ENV"`
+}
+```
+
+To set `GetENV` value use `INNER_TEST_ENV` environment value. Or you can change `INNER` name with env tag.
+
+```go
+type Config struct {
+    Inner Inner `env:"IN"`
+}
+```
+
+Now value use `IN_TEST_ENV`
+
 ### Flags (command-line parameters)
 For all exported fields from the config struct the tag of the field identified by "cmd"
 will be checked if a corresponding command-line parameter is present. The tag may contain
@@ -230,7 +255,94 @@ Parameters can be supplied on the command-line as described in the standard Go p
 
 ```go
 type MyConfig struct {
-    Host string `cfg:"hostname" env:"hostname", cmd:"h,host,hostname" default:"127.0.0.1"`
-    Port uint16 `cfg:"port" default:"8080"` // Will also define flags and will search in env based on 'cmd' tag
+    Host string     `cfg:"hostname" env:"hostname" cmd:"h,host,hostname" default:"127.0.0.1"`
+    Port uint16     `cfg:"port" default:"8080"` // Will also define flags and will search in env based on 'cmd' tag
+    Password string `cfg:"password" secret:"password"`
+    User string     `cfg:"user" secret:"user" loggable:"true"` // Set general loggable
+    Info string     `cfg:"info" secret:"info,loggable"` // Set secret's loggable option
 }
 ```
+
+## Print configuration
+
+`secret` tag is disabled to print but if you want to print it add aditional option to secret called `loggable`.
+
+```go
+Info string     `cfg:"info" secret:"info,loggable"` // Set secret's loggable option
+```
+
+Or you can set general loggable to manage it all tags in releated field.
+
+```go
+User string     `cfg:"user" secret:"user" loggable:"true"` // Set general loggable
+```
+
+```go
+conf := config.AppConfig{} // set up config value somehow
+// log is zerolog/log package
+log.Info().
+    EmbedObject(Printer{Value: conf}).
+    Msg("loaded config")
+```
+
+## Examples
+
+<details><summary>Example usage of Vault server</summary>
+
+Set Vault or Consul server address with releated environment variables.
+
+Run a development vault
+
+```sh
+docker run -it --rm --cap-add=IPC_LOCK --name=dev-vault -p 8200:8200 vault
+```
+
+After that connect this vault with vault CLI app.
+
+```sh
+# export address for http
+export VAULT_ADDR="http://127.0.0.1:8200"
+# login with root token (appears in docker output)
+vault login <token>
+# unseal it
+vault operator unseal <unsealkey>
+# create kv secret engine
+vault secrets enable -path=finops -version=2 kv
+# create policy to read
+{
+cat <<EOF
+path "finops/*" {
+  capabilities = ["read", "list"]
+}
+path "finops/data/generic/super-secret" {
+  capabilities = ["deny"]
+}
+EOF
+} | vault policy write finops-read -
+
+# create a approle with policy and enable connection without secret_id
+vault auth enable approle
+vault write auth/approle/role/my-role bind_secret_id=false secret_id_bound_cidrs="127.0.0.0/8,172.17.0.0/16" policies="default","finops-read"
+# learn role-id
+ROLE_ID=$(vault read -field=role_id auth/approle/role/my-role/role-id)
+
+# fill some data
+vault kv put finops/generic/keycloack @_example/readFromAll/generic_keycloack.json
+vault kv put finops/generic/migrations @_example/readFromAll/generic_migrations.json
+vault kv put finops/generic/super-secret @_example/readFromAll/generic_supersecret.json
+vault kv put finops/test @_example/readFromAll/test.json
+```
+
+After that add our data in your `finops` kv section. Under usually should be a `generic` section and you should add keycloack and migration in there. also add your application name data in `finops`.
+
+```sh
+(
+    export VAULT_ADDR="http://localhost:8200"
+    export VAULT_ROLE_ID=${ROLE_ID}
+    # export CONSUL_HTTP_ADDR="am2vm2042.test.igdcs.com:8500"
+    export MIGRATIONS_TEST_ENV="testing_testing_1234"
+    go run _example/readFromAll/main.go
+)
+```
+
+</details>

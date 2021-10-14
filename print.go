@@ -53,6 +53,7 @@ func (p Printer) MarshalZerologObject(ev *zerolog.Event) {
 
 	if marshaler, ok := p.Value.(zerolog.LogObjectMarshaler); ok {
 		ev.EmbedObject(marshaler)
+
 		return
 	}
 
@@ -69,20 +70,24 @@ func (p Printer) MarshalZerologObject(ev *zerolog.Event) {
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
 
-		loggable, ok := f.Tag.Lookup(p.LoggableTag)
+		loggableValue, ok := f.Tag.Lookup(p.LoggableTag)
+
+		loggable := loggableValue == "true"
 
 		// Currently only 'true' is supported as value for LoggableTag
-		if ok && loggable != "true" {
+		if ok && !loggable {
 			continue
 		}
 
-		_, isSecret := f.Tag.Lookup(SecretTagName)
+		secretValues, isSecret := f.Tag.Lookup(SecretTagName)
 
 		// If the tag could potentially be a secret you need to
 		// explicitly state that you want to log it
 		// else the default is not log it.
-		if isSecret && loggable != "true" {
-			continue
+		if isSecret && !loggable {
+			if !isInTagOption(secretValues, LoggableTagName) {
+				continue
+			}
 		}
 
 		name, elem := p.NameGetter(f), e.FieldByName(f.Name)
@@ -141,6 +146,7 @@ func (p Printer) printInterfacePrinter(ev *zerolog.Event, name string, elem refl
 	if !elem.IsValid() || (elem.Kind() == reflect.Ptr && elem.IsNil()) {
 		// Maybe this will be changed in the future, but currently let's be verbose about nil pointers.
 		ev.Interface(name, nil)
+
 		return true
 	}
 
@@ -155,6 +161,7 @@ func (p Printer) printInterfacePrinter(ev *zerolog.Event, name string, elem refl
 		jsn, err := v.MarshalJSON()
 		if err != nil {
 			ev.AnErr("error_"+name, err)
+
 			return true
 		}
 
@@ -163,6 +170,7 @@ func (p Printer) printInterfacePrinter(ev *zerolog.Event, name string, elem refl
 		txt, err := v.MarshalText()
 		if err != nil {
 			ev.AnErr("error_"+name, err)
+
 			return true
 		}
 
@@ -203,4 +211,21 @@ func (p Printer) validateInput() (reflect.Value, bool) {
 // DefaultNameGetter returns lowercase field name as json field name.
 func DefaultNameGetter(t reflect.StructField) string {
 	return strings.ToLower(t.Name)
+}
+
+func isInTagOption(tagValues, check string) bool {
+	printSecret := false
+	splitSecret := strings.Split(tagValues, ",")
+
+	if len(splitSecret) > 1 {
+		for i := 1; i < len(splitSecret); i++ {
+			if strings.TrimSpace(splitSecret[i]) == check {
+				printSecret = true
+
+				break
+			}
+		}
+	}
+
+	return printSecret
 }

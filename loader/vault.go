@@ -2,6 +2,7 @@ package loader
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/rand"
 	"os"
@@ -24,7 +25,7 @@ const VaultRoleIDEnv = "VAULT_ROLE_ID"
 const VaultRoleSecretEnv = "VAULT_ROLE_SECRET" // nolint:gosec // false-positive
 
 // VaultSecretBasePath is the base path for secrets.
-var VaultSecretBasePath = "finops/data"
+var VaultSecretBasePath = "finops"
 
 // VaultSecretGenericPath is path for storing generic secrets.
 // Such generic secrets might be re-used by any number of applications.
@@ -37,6 +38,7 @@ var VaultAppRoleBasePath = "auth/approle/login"
 
 type Vaulter interface {
 	Read(path string) (*api.Secret, error)
+	List(path string) (*api.Secret, error)
 }
 
 // AuthOption options for authentication.
@@ -85,7 +87,7 @@ func NewVaulter(addr, token string) (Vaulter, error) {
 // If VaultRoleIDEnv environment variable is set - also logs in based on role_id and role_secret.
 //
 // See NewVaulterFromClient for more information.
-func NewVaulterFromEnv() (Vaulter, error) {
+func NewVaulterFromEnv(ctx context.Context) (Vaulter, error) {
 	vault, err := api.NewClient(api.DefaultConfig())
 	if err != nil || vault == nil {
 		return nil, err
@@ -102,19 +104,35 @@ func NewVaulterFromEnv() (Vaulter, error) {
 		}
 	}
 
-	return NewVaulterFromClient(vault)
+	return NewVaulterFromClient(ctx, vault)
 }
 
 // NewVaulterFromClient will create a Vaulter client based on input client.
 //
 // This function will try to choose live Vault instance from the Consul.
-func NewVaulterFromClient(cl *api.Client) (Vaulter, error) {
+func NewVaulterFromClient(ctx context.Context, cl *api.Client) (Vaulter, error) {
 	if cl == nil {
 		return nil, ErrNoClient
 	}
 
-	if err := FetchVaultAddrFromConsul(cl, (&Consul{}).SearchLiveServices); err != nil {
+	// Override vault address from consul
+	err := FetchVaultAddrFromConsul(ctx, cl, (&Consul{}).SearchLiveServices)
+	if err != nil && !errors.Is(err, ErrNoClient) {
 		return nil, fmt.Errorf("fetch Vault addr from Consul: %w", err)
+	}
+
+	// not gave any address with environment value
+	if errors.Is(err, ErrNoClient) {
+		// check VAULT_ADDR and VAULT_AGENT_ADDR to not change vault address
+		if _, ok := os.LookupEnv("VAULT_ADDR"); ok {
+			return cl.Logical(), nil
+		}
+
+		if _, ok := os.LookupEnv("VAULT_AGENT_ADDR"); ok {
+			return cl.Logical(), nil
+		}
+
+		return nil, fmt.Errorf("not gave any VAULT_ADDR, VAULT_AGENT_ADDR or CONSUL_HTTP_ADDR, err: %w", ErrNoClient)
 	}
 
 	return cl.Logical(), nil
@@ -167,6 +185,7 @@ func NewVaulterer(addr string, opts ...AuthOption) (loader Loader, err error) {
 func SetToken(token string) AuthOption {
 	return func(c *api.Client) error {
 		c.SetToken(token)
+
 		return nil
 	}
 }
@@ -192,25 +211,30 @@ func SetAppRole(role, secret string) AuthOption {
 	}
 }
 
-// Load will load data from Vault to input struct 'to'.
+// LoadWithContext will load data from Vault to input struct 'to'.
 // 'name' is base secret path, or just name of application.
 // Path will be constructed as "${VaultSecretTag}/${name}".
 // By default VaultSecretTag value is "secrets/data", which allows to load secrets from root.
-func (v *Vault) Load(appName string, to interface{}) error {
-	if err := v.LoadGeneric(to); err != nil {
+func (v *Vault) LoadWithContext(ctx context.Context, appName string, to interface{}) error {
+	if err := v.LoadGeneric(ctx, to); err != nil {
 		return err
 	}
 
-	return v.LoadFromReformat(getVaultSecretPath(appName), to)
+	return v.LoadFromReformat(ctx, appName, to)
+}
+
+// Load is same as LoadWithContext without context.
+func (v *Vault) Load(appName string, to interface{}) error {
+	return v.LoadWithContext(context.Background(), appName, to)
 }
 
 // LoadGeneric loads generic(shared) secrets from Vault.
-func (v *Vault) LoadGeneric(to interface{}) error {
-	return v.LoadFromReformat(getVaultSecretPath(VaultSecretGenericPath), to)
+func (v *Vault) LoadGeneric(ctx context.Context, to interface{}) error {
+	return v.LoadFromReformat(ctx, VaultSecretGenericPath, to)
 }
 
-func (v *Vault) LoadFromReformat(appName string, to interface{}) error {
-	secretMap, err := v.loadSecretData(appName)
+func (v *Vault) LoadFromReformat(ctx context.Context, appName string, to interface{}) error {
+	secretMap, err := v.loadSecretData(ctx, appName, true)
 	if err != nil {
 		return err
 	}
@@ -218,13 +242,48 @@ func (v *Vault) LoadFromReformat(appName string, to interface{}) error {
 	return codec.MapDecoder(secretMap, to, VaultSecretTag)
 }
 
-func (v *Vault) loadSecretData(appName string) (map[string]interface{}, error) {
-	if err := v.EnsureClient(); err != nil {
+func (v *Vault) loadSecretData(ctx context.Context, appName string, errCheck bool) (map[string]interface{}, error) {
+	if err := v.EnsureClient(ctx); err != nil {
 		return nil, err
 	}
 
-	pathSecret, err := v.Client.Read(appName)
+	// list with meta path
+	appNameMeta := path.Join(VaultSecretBasePath, "metadata", appName)
+
+	pathSecret, _ := v.Client.List(appNameMeta)
+
+	if pathSecret != nil {
+		// combine new map and return
+		secretMap := make(map[string]interface{})
+
+		// Empty assign is so this part will not panic if conversion was unsuccessful.
+		keys, ok := pathSecret.Data["keys"].([]interface{})
+		if !ok {
+			return nil, fmt.Errorf("data[\"keys\"] from path %q cannot be converted to array", appName)
+		}
+
+		for _, k := range keys {
+			data, err := v.loadSecretData(ctx, path.Join(appName, k.(string)), false)
+			if err != nil {
+				return nil, err
+			}
+
+			secretMap[k.(string)] = data
+		}
+
+		return secretMap, nil
+	}
+
+	// read with data path
+	appNameData := path.Join(VaultSecretBasePath, "data", appName)
+
+	pathSecret, err := v.Client.Read(appNameData)
 	if err != nil {
+		// recursive call should not return error
+		if !errCheck {
+			return nil, nil
+		}
+
 		return nil, fmt.Errorf("vault request for path %q failed: %w", appName, err)
 	}
 
@@ -248,11 +307,11 @@ func (v *Vault) loadSecretData(appName string) (map[string]interface{}, error) {
 }
 
 // EnsureClient creates and sets a Vault client if needed.
-func (v *Vault) EnsureClient() error {
+func (v *Vault) EnsureClient(ctx context.Context) error {
 	if v.Client == nil {
 		var err error
 
-		v.Client, err = NewVaulterFromEnv()
+		v.Client, err = NewVaulterFromEnv(ctx)
 		if err != nil {
 			return err
 		}
@@ -270,11 +329,11 @@ func (v *Vault) EnsureClient() error {
 // If no instances were found or error happened - nothing will be changed.
 //
 // If address will be changed - it will always be HTTPS.
-func FetchVaultAddrFromConsul(client *api.Client, serviceFetcher LiveServiceFetcher) error {
-	services, err := serviceFetcher(context.Background(), "vault", nil)
+func FetchVaultAddrFromConsul(ctx context.Context, client *api.Client, serviceFetcher LiveServiceFetcher) error {
+	services, err := serviceFetcher(ctx, "vault", nil)
 	if err != nil {
 		if internal.IsLocalNetworkError(err) {
-			log.Warn().
+			log.Ctx(ctx).Warn().
 				Str("loader", fmt.Sprintf("%T", (*Vault)(nil))).
 				Msg("local Consul server is not available, skipping fetching Vault address")
 
@@ -285,7 +344,7 @@ func FetchVaultAddrFromConsul(client *api.Client, serviceFetcher LiveServiceFetc
 	}
 
 	if len(services) == 0 {
-		log.Warn().Msg("no healthy Vault services found in Consul, will keep current address")
+		log.Ctx(ctx).Warn().Msg("no healthy Vault services found in Consul, will keep current address")
 
 		return nil
 	}
@@ -299,9 +358,7 @@ func FetchVaultAddrFromConsul(client *api.Client, serviceFetcher LiveServiceFetc
 		return fmt.Errorf("set address: %w", err)
 	}
 
-	return nil
-}
+	log.Ctx(ctx).Info().Msg("vault address got from consul server")
 
-func getVaultSecretPath(parts ...string) string {
-	return path.Join(append([]string{VaultSecretBasePath}, parts...)...)
+	return nil
 }

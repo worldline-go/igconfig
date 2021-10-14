@@ -1,6 +1,7 @@
 package loader
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -46,14 +47,14 @@ type File struct {
 	NoFolderCheck bool
 }
 
-// Load will try to load configuration file from two places: working directory(or file specified in env) and /etc.
+// LoadWithContext will try to load configuration file from two places: working directory(or file specified in env) and /etc.
 // File in /etc will only be read if configuration file is missing in working directory.
 //
 // See DefaultDecoder for understanding of which decoder will used in this loader.
 //
 // Not existing configuration files are not treated as an error.
 // If this behavior is required - use `Reader.Load*` methods directly.
-func (l File) Load(appName string, to interface{}) error {
+func (l File) LoadWithContext(_ context.Context, appName string, to interface{}) error {
 	// check ENV file
 	err := l.LoadEnv(to)
 	if !errors.Is(err, ErrNoEnv) {
@@ -79,6 +80,11 @@ func (l File) Load(appName string, to interface{}) error {
 	workingDir, _ := os.Getwd()
 
 	return fmt.Errorf("%w: %s not found in %s and %s", ErrNoConfFile, appName, workingDir, l.EtcPath)
+}
+
+// Load is just same as LoadWithContext without context.
+func (l File) Load(appName string, to interface{}) error {
+	return l.LoadWithContext(context.TODO(), appName, to)
 }
 
 // LoadWorkDir will load configuration from current working directory.

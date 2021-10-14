@@ -1,6 +1,7 @@
 package loader
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -40,8 +41,12 @@ type Flags struct {
 	NoUsage bool
 }
 
-func (f Flags) Load(_ string, to interface{}) error {
+func (f Flags) LoadWithContext(_ context.Context, _ string, to interface{}) error {
 	return f.LoadSlice(to, os.Args[1:])
+}
+
+func (f Flags) Load(_ string, to interface{}) error {
+	return f.LoadWithContext(context.TODO(), "", to)
 }
 
 // LoadCmdline loads config values from the command line.

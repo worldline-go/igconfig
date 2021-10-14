@@ -27,6 +27,10 @@ type Loader interface {
 	// Even if particular loader type must implement ReflectLoader -
 	// this interface still must be implemented as a proxy.
 	Load(appName string, to interface{}) error
+
+	// LoadWithContext same as Load but using predefined ctx in load process.
+	// This is usable for logging.
+	LoadWithContext(ctx context.Context, appName string, to interface{}) error
 }
 
 type DynamicValuer interface {
