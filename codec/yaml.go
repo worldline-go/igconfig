@@ -3,7 +3,7 @@ package codec
 import (
 	"io"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 type YAML struct {
@@ -15,7 +15,7 @@ func (c YAML) Decode(r io.Reader, to interface{}) error {
 	decoder := yaml.NewDecoder(r)
 
 	if c.Strict {
-		decoder.SetStrict(true)
+		decoder.KnownFields(true)
 	}
 
 	return decoder.Decode(to)
