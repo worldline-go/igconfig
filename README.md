@@ -328,7 +328,6 @@ ROLE_ID=$(vault read -field=role_id auth/approle/role/my-role/role-id)
 
 # fill some data
 vault kv put finops/generic/keycloack @_example/readFromAll/generic_keycloack.json
-vault kv put finops/generic/migrations @_example/readFromAll/generic_migrations.json
 vault kv put finops/generic/super-secret @_example/readFromAll/generic_supersecret.json
 vault kv put finops/test @_example/readFromAll/test.json
 ```

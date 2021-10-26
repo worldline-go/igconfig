@@ -39,7 +39,7 @@ type Migrate struct {
 
 type Keycloack struct {
 	SSOBaseURL     string `cfg:"ssobaseurl"       secret:"ssobaseurl,loggable"`
-	SSOPublicKeyID string `cfg:"ssopubkeyid"   secret:"ssopubkeyid,loggable"`
+	SSOPublicKeyID string `cfg:"ssopubkeyid"      secret:"ssopubkeyid,loggable"`
 	SSORealm       string `cfg:"ssorealm"         secret:"ssorealm,loggable"`
 	CacheRetention string `cfg:"cacheretention"   default:"30m"`
 }

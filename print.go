@@ -13,8 +13,8 @@ import (
 var _ zerolog.LogObjectMarshaler = Printer{}
 
 const (
-	LoggableTagName = "loggable"
-	SecretTagName   = "secret"
+	LoggableTagOptionName = "loggable"
+	SecretTagName         = "secret"
 )
 
 type NameGetter func(t reflect.StructField) string
@@ -30,8 +30,6 @@ type NameGetter func(t reflect.StructField) string
 //		Object("config", Printer{Value: conf}).
 //		Msg("loaded config")
 type Printer struct {
-	// LoggableTag will be used to get tag value and check if field can be logged or not.
-	LoggableTag string
 	// NameGetter will be called for each field to get name of it.
 	NameGetter
 	// Value is actual struct that should be printed.
@@ -59,10 +57,6 @@ func (p Printer) MarshalZerologObject(ev *zerolog.Event) {
 
 	t := e.Type()
 
-	if p.LoggableTag == "" {
-		p.LoggableTag = LoggableTagName
-	}
-
 	if p.NameGetter == nil {
 		p.NameGetter = DefaultNameGetter
 	}
@@ -70,7 +64,7 @@ func (p Printer) MarshalZerologObject(ev *zerolog.Event) {
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
 
-		loggableValue, ok := f.Tag.Lookup(p.LoggableTag)
+		loggableValue, ok := f.Tag.Lookup(LoggableTagOptionName)
 
 		loggable := loggableValue == "true"
 
@@ -85,7 +79,7 @@ func (p Printer) MarshalZerologObject(ev *zerolog.Event) {
 		// explicitly state that you want to log it
 		// else the default is not log it.
 		if isSecret && !loggable {
-			if !isInTagOption(secretValues, LoggableTagName) {
+			if !isInTagOption(secretValues, LoggableTagOptionName) {
 				continue
 			}
 		}
@@ -124,9 +118,8 @@ func (p Printer) logTyped(ev *zerolog.Event, name string, elem reflect.Value) *z
 
 		if elem.Kind() == reflect.Struct {
 			return ev.Object(name, Printer{
-				LoggableTag: p.LoggableTag,
-				NameGetter:  p.NameGetter,
-				Value:       elem.Interface(),
+				NameGetter: p.NameGetter,
+				Value:      elem.Interface(),
 			})
 		}
 

@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"os"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/vault/api"
@@ -36,6 +37,8 @@ var VaultSecretGenericPath = "generic"
 // app role authentication.
 var VaultAppRoleBasePath = "auth/approle/login"
 
+var errUnusable = errors.New("method not usable")
+
 type Vaulter interface {
 	Read(path string) (*api.Secret, error)
 	List(path string) (*api.Secret, error)
@@ -64,9 +67,6 @@ type AuthOption func(*api.Client) error
 //  // config is now populated from Vault.
 type Vault struct {
 	Client Vaulter
-	// ErrOnUnsetable specifies behavior when field is unsetable.
-	// If it is true - error will be returned, false - it will be just logged.
-	ErrOnUnsetable bool
 }
 
 func NewVaulter(addr, token string) (Vaulter, error) {
@@ -225,7 +225,7 @@ func (v *Vault) LoadWithContext(ctx context.Context, appName string, to interfac
 
 // Load is same as LoadWithContext without context.
 func (v *Vault) Load(appName string, to interface{}) error {
-	return v.LoadWithContext(context.Background(), appName, to)
+	return v.LoadWithContext(log.Logger.WithContext(context.Background()), appName, to)
 }
 
 // LoadGeneric loads generic(shared) secrets from Vault.
@@ -247,7 +247,41 @@ func (v *Vault) loadSecretData(ctx context.Context, appName string, errCheck boo
 		return nil, err
 	}
 
-	// list with meta path
+	// first try to check list method
+	if strings.HasSuffix(appName, "/") {
+		// list with meta path
+		rest, err := v.list(ctx, appName)
+		if err == nil {
+			return rest, err
+		}
+
+		// error from not list area
+		if !errors.Is(err, errUnusable) {
+			return nil, err
+		}
+	}
+
+	// read with data path
+	rest, err := v.read(ctx, appName, errCheck)
+	if err == nil {
+		return rest, err
+	}
+
+	// second try list
+	if errors.Is(err, errUnusable) {
+		rest, err := v.list(ctx, appName)
+		// dont return errUnusable
+		if !errors.Is(err, errUnusable) {
+			return rest, err
+		}
+
+		return nil, nil
+	}
+
+	return rest, err
+}
+
+func (v *Vault) list(ctx context.Context, appName string) (map[string]interface{}, error) {
 	appNameMeta := path.Join(VaultSecretBasePath, "metadata", appName)
 
 	pathSecret, _ := v.Client.List(appNameMeta)
@@ -256,11 +290,12 @@ func (v *Vault) loadSecretData(ctx context.Context, appName string, errCheck boo
 		// combine new map and return
 		secretMap := make(map[string]interface{})
 
-		// Empty assign is so this part will not panic if conversion was unsuccessful.
 		keys, ok := pathSecret.Data["keys"].([]interface{})
 		if !ok {
 			return nil, fmt.Errorf("data[\"keys\"] from path %q cannot be converted to array", appName)
 		}
+
+		log.Ctx(ctx).Debug().Msgf("%#v", keys)
 
 		for _, k := range keys {
 			data, err := v.loadSecretData(ctx, path.Join(appName, k.(string)), false)
@@ -274,36 +309,35 @@ func (v *Vault) loadSecretData(ctx context.Context, appName string, errCheck boo
 		return secretMap, nil
 	}
 
-	// read with data path
+	return nil, errUnusable
+}
+
+func (v *Vault) read(ctx context.Context, appName string, errCheck bool) (map[string]interface{}, error) {
 	appNameData := path.Join(VaultSecretBasePath, "data", appName)
 
 	pathSecret, err := v.Client.Read(appNameData)
 	if err != nil {
 		// recursive call should not return error
+		// could be policy denied to read it
 		if !errCheck {
+			log.Ctx(ctx).Warn().Err(err).Msgf("denied to read path %v failed", appName)
+
 			return nil, nil
 		}
 
 		return nil, fmt.Errorf("vault request for path %q failed: %w", appName, err)
 	}
 
-	if pathSecret == nil || pathSecret.Data == nil {
-		// Create dummy data so we will be able to proceed on normal route.
-		// We do this as inner structs still may be able to have secret data.
-		pathSecret = &api.Secret{
-			Data: map[string]interface{}{
-				"data": map[string]interface{}{},
-			},
+	if pathSecret != nil {
+		secretMap, _ := pathSecret.Data["data"].(map[string]interface{})
+		if secretMap == nil {
+			return nil, fmt.Errorf("secret from path %q cannot be converted to map", appName)
 		}
+
+		return secretMap, nil
 	}
 
-	// Empty assign is so this part will not panic if conversion was unsuccessful.
-	secretMap, _ := pathSecret.Data["data"].(map[string]interface{})
-	if secretMap == nil {
-		return nil, fmt.Errorf("secret from path %q cannot be converted to map", appName)
-	}
-
-	return secretMap, nil
+	return nil, errUnusable
 }
 
 // EnsureClient creates and sets a Vault client if needed.

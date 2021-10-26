@@ -81,7 +81,7 @@ func (c Consul) LoadWithContext(ctx context.Context, appName string, to interfac
 
 // Load is just same as LoadWithContext without context.
 func (c Consul) Load(appName string, to interface{}) error {
-	return c.LoadWithContext(context.Background(), appName, to)
+	return c.LoadWithContext(log.Logger.WithContext(context.Background()), appName, to)
 }
 
 // DynamicValue allows to get dynamically updated values at a runtime.
