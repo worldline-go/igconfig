@@ -93,17 +93,6 @@ func NewVaulterFromEnv(ctx context.Context) (Vaulter, error) {
 		return nil, err
 	}
 
-	roleID, roleSecret := os.Getenv(VaultRoleIDEnv), os.Getenv(VaultRoleSecretEnv)
-	// Check only roleID as roleSecret can be empty in some cases.
-	if roleID != "" {
-		// Unset previous token to prevent any problems.
-		vault.ClearToken()
-
-		if err := SetAppRole(roleID, roleSecret)(vault); err != nil {
-			return nil, err
-		}
-	}
-
 	return NewVaulterFromClient(ctx, vault)
 }
 
@@ -125,14 +114,29 @@ func NewVaulterFromClient(ctx context.Context, cl *api.Client) (Vaulter, error) 
 	if errors.Is(err, ErrNoClient) {
 		// check VAULT_ADDR and VAULT_AGENT_ADDR to not change vault address
 		if _, ok := os.LookupEnv("VAULT_ADDR"); ok {
-			return cl.Logical(), nil
+			return setAppRoleEnv(cl)
 		}
 
 		if _, ok := os.LookupEnv("VAULT_AGENT_ADDR"); ok {
-			return cl.Logical(), nil
+			return setAppRoleEnv(cl)
 		}
 
 		return nil, fmt.Errorf("not gave any VAULT_ADDR, VAULT_AGENT_ADDR or CONSUL_HTTP_ADDR, err: %w", ErrNoClient)
+	}
+
+	return setAppRoleEnv(cl)
+}
+
+func setAppRoleEnv(cl *api.Client) (Vaulter, error) {
+	roleID, roleSecret := os.Getenv(VaultRoleIDEnv), os.Getenv(VaultRoleSecretEnv)
+	// Check only roleID as roleSecret can be empty in some cases.
+	if roleID != "" {
+		// Unset previous token to prevent any problems.
+		cl.ClearToken()
+
+		if err := SetAppRole(roleID, roleSecret)(cl); err != nil {
+			return nil, err
+		}
 	}
 
 	return cl.Logical(), nil
@@ -294,8 +298,6 @@ func (v *Vault) list(ctx context.Context, appName string) (map[string]interface{
 		if !ok {
 			return nil, fmt.Errorf("data[\"keys\"] from path %q cannot be converted to array", appName)
 		}
-
-		log.Ctx(ctx).Debug().Msgf("%#v", keys)
 
 		for _, k := range keys {
 			data, err := v.loadSecretData(ctx, path.Join(appName, k.(string)), false)

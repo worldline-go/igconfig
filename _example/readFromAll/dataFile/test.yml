@@ -1,0 +1,10 @@
+appPort: 8080
+test: testing
+migrations:
+  dbdatasource: postgres://secret@10.63.80.75:5433/boteu1
+keycloack:
+  ssobaseurl: http://keycloak.test.igdcs.com/
+  ssopubkeyid: keyid1234
+  ssorealm: finops
+super-secret:
+  topsecret: qwerty1234

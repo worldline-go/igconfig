@@ -287,6 +287,17 @@ log.Info().
 
 ## Examples
 
+<details><summary>Example usage of File</summary>
+
+```sh
+(
+export CONFIG_FILE=_example/readFromAll/dataFile/test.yml
+go run _example/readFromAll/main.go
+)
+```
+
+</details>
+
 <details><summary>Example usage of Vault server</summary>
 
 Set Vault or Consul server address with releated environment variables.
@@ -327,21 +338,39 @@ vault write auth/approle/role/my-role bind_secret_id=false secret_id_bound_cidrs
 ROLE_ID=$(vault read -field=role_id auth/approle/role/my-role/role-id)
 
 # fill some data
-vault kv put finops/generic/keycloack @_example/readFromAll/generic_keycloack.json
-vault kv put finops/generic/super-secret @_example/readFromAll/generic_supersecret.json
-vault kv put finops/test @_example/readFromAll/test.json
+vault kv put finops/generic/keycloack @_example/readFromAll/dataVault/generic_keycloack.json
+vault kv put finops/generic/super-secret @_example/readFromAll/dataVault/generic_supersecret.json
+vault kv put finops/test @_example/readFromAll/dataVault/test.json
 ```
 
 After that add our data in your `finops` kv section. Under usually should be a `generic` section and you should add keycloack and migration in there. also add your application name data in `finops`.
 
 ```sh
 (
-    export VAULT_ADDR="http://localhost:8200"
-    export VAULT_ROLE_ID=${ROLE_ID}
-    # export CONSUL_HTTP_ADDR="am2vm2042.test.igdcs.com:8500"
-    export MIGRATIONS_TEST_ENV="testing_testing_1234"
-    go run _example/readFromAll/main.go
+export VAULT_ADDR="http://localhost:8200"
+export VAULT_ROLE_ID=${ROLE_ID}
+# export CONSUL_HTTP_ADDR="am2vm2042.test.igdcs.com:8500"
+export MIGRATIONS_TEST_ENV="testing_testing_1234"
+go run _example/readFromAll/main.go
 )
+```
+
+</details>
+
+## Development Tips
+
+<details><summary>Development JSON|YAML</summary>
+
+If you want to prepare example you can use `yq` tool for translate json to yaml or yaml to json.
+
+```sh
+# yaml to json
+cat _example/file/turna.yml | yq
+```
+
+```sh
+# json to yaml
+cat _example/vault/turna_static.json | yq -y
 ```
 
 </details>

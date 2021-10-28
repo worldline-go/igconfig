@@ -13,19 +13,21 @@ import (
 
 // Config struct detailing all project parameters.
 type Config struct {
-	AppPort int `cfg:"port" env:"PORT" cmd:"port,p" default:"9057"`
+	AppPort int `cfg:"appPort" env:"PORT" cmd:"port,p" default:"9057"`
 	// application specific vault
 	DBSchema     string `cfg:"pgxschema"          env:"SCHEMA"             secret:"schema,loggable"      default:"transaction"`
 	DBDataSource string `cfg:"pgxdbdatasource"    env:"DBDATASOURCE"       secret:"datasource" loggable:"true"`
 	DBType       string `cfg:"dbtype"             env:"DBTYPE"             secret:"dbtype,loggable"      default:"pgx" loggable:"false"`
 
-	SuperSecret SuperSecret `secret:"super-secret,loggable"`
-	Test        string      `secret:"test,loggable"`
+	SuperSecret SuperSecret `cfg:"super-secret" secret:"super-secret,loggable"`
+	Test        string      `cfg:"test" secret:"test,loggable"`
 
 	// generic vault secrets
 	Keycloack Keycloack
 	// env automatically compare uppercase
-	Migrate Migrate `secret:"migrations,loggable" env:"migrations"`
+	Migrate Migrate `cfg:"migrations" secret:"migrations,loggable" env:"migrations"`
+
+	Abc interface{}
 }
 
 type SuperSecret struct {
