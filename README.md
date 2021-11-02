@@ -19,37 +19,6 @@ require (
 )
 ```
 
-<details><summary>Example Usage</summary>
-
-Check **_example** folder and look to usage.  
-To run and test it:
-
-```sh
-cd _example/fileLoad
-go run main.go
-```
-
-</details>
-
-<details><summary>Tests</summary>
-
-## Unit tests
-```sh
-go test ./...
-```
-
-## Code coverage report (Browser)
-```sh
-mkdir _out
-go test -cover -coverprofile cover.out -outputdir ./_out/ ./...
-# Auto open html result
-go tool cover -html=./_out/cover.out
-# Export HTML
-# go tool cover -html=./_out/cover.out -o ./_out/coverage.html
-```
-
-</details>
-
 ## Description
 There is only a single exported function:
 ```
@@ -357,20 +326,39 @@ go run _example/readFromAll/main.go
 
 </details>
 
-## Development Tips
+## Development
 
-<details><summary>Development JSON|YAML</summary>
+<details><summary>Package Test</summary>
+
+## Unit tests
+```sh
+go test ./...
+```
+
+## Code coverage report (Browser)
+```sh
+mkdir _out
+go test -cover -coverprofile cover.out -outputdir ./_out/ ./...
+# Auto open html result
+go tool cover -html=./_out/cover.out
+# Export HTML
+# go tool cover -html=./_out/cover.out -o ./_out/coverage.html
+```
+
+</details>
+
+<details><summary>JSON|YAML</summary>
 
 If you want to prepare example you can use `yq` tool for translate json to yaml or yaml to json.
 
 ```sh
 # yaml to json
-cat _example/file/turna.yml | yq
+cat _example/readFromAll/dataFile/test.yml | yq
 ```
 
 ```sh
 # json to yaml
-cat _example/vault/turna_static.json | yq -y
+cat _example/readFromAll/dataVault/generic_keycloack.json | yq -y
 ```
 
 </details>

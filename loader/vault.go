@@ -229,7 +229,7 @@ func (v *Vault) LoadWithContext(ctx context.Context, appName string, to interfac
 
 // Load is same as LoadWithContext without context.
 func (v *Vault) Load(appName string, to interface{}) error {
-	return v.LoadWithContext(log.Logger.WithContext(context.Background()), appName, to)
+	return v.LoadWithContext(context.Background(), appName, to)
 }
 
 // LoadGeneric loads generic(shared) secrets from Vault.

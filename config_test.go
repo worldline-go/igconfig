@@ -15,6 +15,8 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
+	os.Clearenv()
+
 	c1 := testdata.BadDefaults{}
 
 	assert.NotNil(t, igconfig.LoadConfig("haha", &c1))

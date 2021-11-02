@@ -61,8 +61,10 @@ func main() {
 	// run igconfig
 
 	// get logger context for config
-	logConfig := log.With().Str("component", "config").Logger()
-	ctx := logConfig.WithContext(context.Background())
+	// logConfig := log.With().Str("component", "config").Logger()
+	// ctx := logConfig.WithContext(context.Background())
+
+	ctx := context.Background()
 
 	var conf Config
 	if err := igconfig.LoadConfigWithContext(ctx, "test", &conf); err != nil {

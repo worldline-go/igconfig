@@ -19,4 +19,5 @@ func init() { //nolint:gochecknoinits // This is default for all of the services
 func ConfigureZerolog() {
 	zerolog.TimeFieldFormat = time.RFC3339Nano
 	log.Logger = zerolog.New(os.Stderr).With().Timestamp().Caller().Logger()
+	zerolog.DefaultContextLogger = &log.Logger
 }

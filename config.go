@@ -32,7 +32,7 @@ func LoadConfigWithContext(ctx context.Context, appName string, c interface{}) e
 }
 
 func LoadWithLoaders(appName string, configStruct interface{}, loaders ...loader.Loader) error {
-	return LoadWithLoadersWithContext(log.Logger.WithContext(context.Background()), appName, configStruct, loaders...)
+	return LoadWithLoadersWithContext(context.Background(), appName, configStruct, loaders...)
 }
 
 // LoadWithLoadersWithContext uses provided Loader's to fill 'configStruct'.
