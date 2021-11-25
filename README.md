@@ -326,6 +326,33 @@ go run _example/readFromAll/main.go
 
 </details>
 
+<details><summary>Example usage of Consul server</summary>
+
+Start consul agent with dev mode
+
+```sh
+docker run -it --rm --name=dev-consul --net=host consul:1.10.4
+```
+
+Go to `localhost:8500` webui and add key values but for our tool folder should be `finops` if you don't modify it.
+
+It could be `yaml` or `json` format or you can handle by `codec.Decoder` interface.
+
+Test it
+```sh
+export CONSUL_HTTP_ADDR="localhost:8500"
+go run _example/readFromAll/main.go
+```
+
+Get Dynamically changes (CHANGEABLE IN FUTURE)
+
+```sh
+export CONSUL_HTTP_ADDR="localhost:8500"
+go run _example/dynamicConsul/main.go
+```
+
+</details>
+
 ## Development
 
 <details><summary>Package Test</summary>
