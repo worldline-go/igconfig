@@ -297,3 +297,59 @@ func TestMapDecoder(t *testing.T) {
 		})
 	}
 }
+
+func TestMapDecoder_Nil(t *testing.T) {
+	type inner struct {
+		Field2 string `secret:"field_2"`
+	}
+
+	type testStruct struct {
+		Field1   string  `secret:"field_1"`
+		Value    float64 `secret:"value"`
+		ValueInt int     `secret:"valueInt"`
+		Untagged int64
+		NoSet    string `secret:"-"`
+		NoData   string `secret:"missing"`
+		Time     time.Time
+		Inner    inner `secret:"other"`
+	}
+
+	type args struct {
+		input  interface{}
+		output interface{}
+		tag    string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+		want    interface{}
+	}{
+		{
+			args: args{
+				input: nil,
+				output: &testStruct{
+					Field1: "don't change this",
+					Value:  1234,
+				},
+				tag: "secret",
+			},
+			wantErr: false,
+			want: &testStruct{
+				Field1:   "don't change this",
+				Value:    1234,
+				ValueInt: 0,
+				Untagged: 0,
+				Inner: inner{
+					Field2: "",
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.NoError(t, MapDecoder(tt.args.input, tt.args.output, tt.args.tag))
+			assert.Equal(t, tt.want, tt.args.output)
+		})
+	}
+}

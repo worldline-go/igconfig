@@ -110,7 +110,7 @@ func NewVaulterFromClient(ctx context.Context, cl *api.Client) (Vaulter, error) 
 		return nil, fmt.Errorf("fetch Vault addr from Consul: %w", err)
 	}
 
-	// not gave any address with environment value
+	// not get any address with environment value
 	if errors.Is(err, ErrNoClient) {
 		// check VAULT_ADDR and VAULT_AGENT_ADDR to not change vault address
 		if _, ok := os.LookupEnv("VAULT_ADDR"); ok {
@@ -121,7 +121,7 @@ func NewVaulterFromClient(ctx context.Context, cl *api.Client) (Vaulter, error) 
 			return setAppRoleEnv(cl)
 		}
 
-		return nil, fmt.Errorf("not gave any VAULT_ADDR, VAULT_AGENT_ADDR or CONSUL_HTTP_ADDR, err: %w", ErrNoClient)
+		return nil, fmt.Errorf("VAULT_ADDR, VAULT_AGENT_ADDR or CONSUL_HTTP_ADDR not found, err: %w", ErrNoClient)
 	}
 
 	return setAppRoleEnv(cl)
@@ -331,6 +331,14 @@ func (v *Vault) read(ctx context.Context, appName string, errCheck bool) (map[st
 	}
 
 	if pathSecret != nil {
+		// Is it destroyed?
+		metadata, ok := pathSecret.Data["metadata"].(map[string]interface{})
+		if ok && isDestroyed(metadata) {
+			log.Ctx(ctx).Warn().Msgf("%s/%s is destoyed, skipping", VaultSecretBasePath, appName)
+
+			return nil, nil
+		}
+
 		secretMap, _ := pathSecret.Data["data"].(map[string]interface{})
 		if secretMap == nil {
 			return nil, fmt.Errorf("secret from path %q cannot be converted to map", appName)
@@ -397,4 +405,17 @@ func FetchVaultAddrFromConsul(ctx context.Context, client *api.Client, serviceFe
 	log.Ctx(ctx).Info().Msg("vault address got from consul server")
 
 	return nil
+}
+
+// isDestroyed checks data is destroyed
+func isDestroyed(metadata map[string]interface{}) bool {
+	if metadata == nil {
+		return false
+	}
+
+	if destoyed, ok := metadata["destroyed"].(bool); ok && destoyed {
+		return true
+	}
+
+	return false
 }

@@ -59,6 +59,50 @@ func TestVault_Load(t *testing.T) {
 	}, s)
 }
 
+func TestVault_LoadUndefined(t *testing.T) {
+	mock := VaultMock{
+		data: nil,
+	}
+
+	v := Vault{
+		Client: mock,
+	}
+
+	var s testStruct
+
+	assert.NoError(t, v.Load("test", &s))
+	assert.Equal(t, testStruct{
+		Field1:   "",
+		Untagged: 0,
+		Inner: inner{
+			Field2: "",
+		},
+	}, s)
+}
+
+func TestVault_LoadDestroyed(t *testing.T) {
+	mock := VaultMock{
+		metadata: map[string]interface{}{
+			"destroyed": true,
+		},
+	}
+
+	v := Vault{
+		Client: mock,
+	}
+
+	var s testStruct
+
+	assert.NoError(t, v.Load("test", &s))
+	assert.Equal(t, testStruct{
+		Field1:   "",
+		Untagged: 0,
+		Inner: inner{
+			Field2: "",
+		},
+	}, s)
+}
+
 func TestVault_LoadMissingData(t *testing.T) {
 	secrets := map[string]interface{}{
 		"field_1":  "one",
@@ -249,9 +293,10 @@ func TestSimpleVaultLoad(t *testing.T) {
 }
 
 type VaultMock struct {
-	data map[string]interface{}
-	list map[string][]interface{}
-	err  error
+	data     map[string]interface{}
+	list     map[string][]interface{}
+	err      error
+	metadata map[string]interface{}
 }
 
 func (v VaultMock) Read(path string) (*api.Secret, error) {
@@ -279,7 +324,6 @@ func (v VaultMock) List(path string) (*api.Secret, error) {
 	path = strings.TrimPrefix(strings.TrimPrefix(path, VaultSecretBasePath), "/")
 
 	if keys, ok := v.list[path]; ok {
-
 		return &api.Secret{
 			Data: map[string]interface{}{
 				"keys": keys,
