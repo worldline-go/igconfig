@@ -16,6 +16,8 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+var ConsulTag = "cfg"
+
 // ConsulConfigPathPrefix specifies prefix for key search.
 var ConsulConfigPathPrefix = "finops"
 
@@ -76,7 +78,11 @@ func (c Consul) LoadWithContext(ctx context.Context, appName string, to interfac
 		c.Decoder = codec.YAML{}
 	}
 
-	return c.Decoder.Decode(bytes.NewReader(data.Value), to)
+	if err := codec.LoadReaderWithDecoder(bytes.NewReader(data.Value), to, c.Decoder, ConsulTag); err != nil {
+		return fmt.Errorf("Consul.LoadWithContext error: %w", err)
+	}
+
+	return nil
 }
 
 // Load is just same as LoadWithContext without context.

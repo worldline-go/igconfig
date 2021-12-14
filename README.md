@@ -88,7 +88,7 @@ Below is a sorted list of currently provided loaders that are included by defaul
 This loader uses `default` tag to get value for fields.
 
 ### Consul
-Loads configuration from Consul and uses YAML decoder to decode data from Consul to a struct.
+Loads configuration from Consul and uses map decoder with `cfg` tag to decode data from Consul to a struct.
 
 If you not give `CONSUL_HTTP_ADDR` as environment variable, this config will skip!
 
@@ -113,7 +113,7 @@ While it is possible to change decoder from YAML to JSON for example it is not r
 if there are no objective reasons to do so. YAML is superior to JSON in terms of readability 
 while providing as much ability to write configurations.
 
-For better configurability configuration struct might include `yaml` tag for fields to 
+For better configurability configuration struct might include `cfg` tag for fields to
 specify a proper name to bind from Consul, if this tag is skipper - lowercase field name will be used to bind.
 
 For example:
@@ -127,7 +127,7 @@ type Config struct {
 ```
 will match this YAML
 ```yaml
-field1: 50
+field: 50
 str:
     inner: "test string"
 ```
@@ -359,7 +359,7 @@ go run _example/dynamicConsul/main.go
 
 ## Unit tests
 ```sh
-go test ./...
+go test --race -cover ./...
 ```
 
 ## Code coverage report (Browser)

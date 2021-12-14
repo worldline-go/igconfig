@@ -31,3 +31,18 @@ type BadDefaults struct {
 	Salary float64 `cfg:"salary"         env:"salary"         cmd:"salary,s"         default:"haha"`
 	Port   int     `cfg:"port"           env:"port"           cmd:"port,p"           default:"haha"`
 }
+
+type UntaggedInnerStruct struct {
+	Str  string
+	Dur  time.Duration
+	Time time.Time
+}
+
+type UntaggedTestConfig struct {
+	Name            string
+	Age             uint
+	Salary          float64
+	Host            string
+	InnerStruct     UntaggedInnerStruct
+	InnerStructSkip InnerStruct `cfg:"-" default:"-"`
+}

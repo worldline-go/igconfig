@@ -14,12 +14,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rs/zerolog"
-
-	"github.com/stretchr/testify/require"
-
 	"github.com/hashicorp/consul/api"
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestLoadFromConsul(t *testing.T) {
@@ -27,9 +25,12 @@ func TestLoadFromConsul(t *testing.T) {
 		Slice []string `yaml:"slice"`
 	}
 	type res struct {
-		FirstName string
-		Base      int64 `yaml:"base_int"`
-		Inner     inner `yaml:"inner"`
+		UntaggedStr     string
+		CamelCaseStr    string `cfg:"camelCaseStr"`
+		CamelCaseInt    int64  `cfg:"camelCaseInt"`
+		CamelCaseStruct inner  `cfg:"camelCaseStruct"`
+		SnakeCaseInt    int64  `cfg:"snake_case_int"`
+		SnakeCaseStruct inner  `cfg:"snake_case_struct"`
 	}
 
 	tests := []struct {
@@ -40,14 +41,44 @@ func TestLoadFromConsul(t *testing.T) {
 		err        string
 	}{
 		{
-			name: "test",
+			name: "test-json",
 			consulConf: ConsulMock{kv: map[string][]byte{
-				"test": []byte(`{firstname: test, base_int: 55, inner: {slice: [one, two, three four]}}`),
+				"test-json": []byte(`{untaggedStr: 'untag value', camelCaseStr: 'camel case value', camelCaseInt: 64, camelCaseStruct: {slice: [one, two]}, snake_case_int: 55, snake_case_struct: {slice: [one, two, three four]}}`),
 			}},
 			result: res{
-				FirstName: "test",
-				Base:      55,
-				Inner:     inner{[]string{"one", "two", "three four"}},
+				UntaggedStr:     "untag value",
+				CamelCaseStr:    "camel case value",
+				CamelCaseInt:    64,
+				CamelCaseStruct: inner{[]string{"one", "two"}},
+				SnakeCaseInt:    55,
+				SnakeCaseStruct: inner{[]string{"one", "two", "three four"}},
+			},
+		},
+		{
+			name: "test-yaml",
+			consulConf: ConsulMock{kv: map[string][]byte{
+				"test-yaml": []byte(`
+untaggedStr: test
+camelCaseStr: 'camel case value'
+camelCaseInt: 64
+camelCaseStruct:
+  slice:
+  - one
+  - two
+snake_case_int: 55
+snake_case_struct:
+  slice:
+  - one
+  - two
+  - three four`),
+			}},
+			result: res{
+				UntaggedStr:     "test",
+				CamelCaseStr:    "camel case value",
+				CamelCaseInt:    64,
+				CamelCaseStruct: inner{[]string{"one", "two"}},
+				SnakeCaseInt:    55,
+				SnakeCaseStruct: inner{[]string{"one", "two", "three four"}},
 			},
 		},
 		{
@@ -62,7 +93,6 @@ func TestLoadFromConsul(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			err := Consul{Client: NewConsulMock(test.consulConf)}.Load(test.name, &test.to)
 

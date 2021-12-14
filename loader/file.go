@@ -141,25 +141,21 @@ func (l File) LoadFile(fileName string, to interface{}) error {
 
 // loadReader automatically choice decoder with config file suffix.
 func (l File) loadReader(reader io.Reader, to interface{}, configType string) error {
+	var decoder codec.Decoder
 	switch configType {
 	case ".yaml", ".yml":
-		return l.LoadReaderWithDecoder(reader, to, codec.YAML{})
+		decoder = codec.YAML{}
 	case ".json":
-		return l.LoadReaderWithDecoder(reader, to, codec.JSON{})
+		decoder = codec.JSON{}
 	default:
 		return fmt.Errorf("%w: %s", ErrNoDecoder, configType)
 	}
-}
 
-// LoadReaderWithDecoder will decode input in `r` into `to` by using `decoder`.
-func (File) LoadReaderWithDecoder(r io.Reader, to interface{}, decoder codec.Decoder) error {
-	generatedMap := map[string]interface{}{}
-
-	if err := decoder.Decode(r, &generatedMap); err != nil {
-		return fmt.Errorf("file loader: %w", err)
+	if err := codec.LoadReaderWithDecoder(reader, to, decoder, FileTag); err != nil {
+		return fmt.Errorf("File.loadReader error: %w", err)
 	}
 
-	return codec.MapDecoder(&generatedMap, to, FileTag)
+	return nil
 }
 
 func cleanName(str string) string {

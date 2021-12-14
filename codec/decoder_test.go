@@ -353,3 +353,72 @@ func TestMapDecoder_Nil(t *testing.T) {
 		})
 	}
 }
+
+func TestLoadReaderWithDecoder(t *testing.T) {
+	type testStructWithCfgTag struct {
+		UntaggedStr string
+		ValueInt    int      `cfg:"valueInt"`
+		ValueFloat  float64  `cfg:"valueFloat"`
+		ValueStr    string   `cfg:"valueStr"`
+		ValueSlice  []string `cfg:"valueArr"`
+		IgnoreStr   string   `cfg:"-"`
+	}
+
+	tests := map[string]struct {
+		input   string
+		output  interface{}
+		decoder Decoder
+		tag     string
+		want    interface{}
+	}{
+		"test with json decoder": {
+			input: `
+{
+	"untaggedStr": "untagged string",
+	"valueInt": 64,
+	"valueFloat": 6.4,
+	"valueStr": "value string",
+	"valueArr": ["one", "two"],
+	"ignoreStr": "ignore string"
+}`,
+			output:  &testStructWithCfgTag{},
+			decoder: JSON{},
+			tag:     "cfg",
+			want: &testStructWithCfgTag{
+				UntaggedStr: "untagged string",
+				ValueInt:    64,
+				ValueFloat:  6.4,
+				ValueSlice:  []string{"one", "two"},
+				ValueStr:    "value string",
+			},
+		},
+		"test with yaml decoder": {
+			input: `untaggedStr: "untagged string"
+valueInt: 64
+valueFloat: 6.4
+valueStr: "value string"
+valueArr: 
+  - one
+  - two
+ignoreStr: 'ignore string'
+`,
+			output:  &testStructWithCfgTag{},
+			decoder: YAML{},
+			tag:     "cfg",
+			want: &testStructWithCfgTag{
+				UntaggedStr: "untagged string",
+				ValueInt:    64,
+				ValueFloat:  6.4,
+				ValueSlice:  []string{"one", "two"},
+				ValueStr:    "value string",
+			},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			assert.NoError(t, LoadReaderWithDecoder(strings.NewReader(tc.input), tc.output, tc.decoder, tc.tag))
+			assert.Equal(t, tc.want, tc.output)
+		})
+	}
+}

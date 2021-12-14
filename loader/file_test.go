@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
 	"github.com/stretchr/testify/require"
 
 	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/loader"
@@ -187,4 +186,34 @@ func TestFile_Nothing(t *testing.T) {
 	l := loader.File{}
 	var c testdata.TestConfig
 	require.Error(t, l.Load("appForNothing", &c))
+}
+
+func TestFile_LoadWithUntaggedStruct(t *testing.T) {
+	data := `name: Holland
+salary: 112.34
+host: example.com
+innerstruct:
+  str: test_me`
+
+	f, err := os.CreateTemp("", "*.yaml")
+	require.NoError(t, err)
+	defer os.Remove(f.Name())
+
+	_, err = f.WriteString(data)
+	require.NoError(t, err)
+
+	os.Setenv(loader.EnvConfigFile, f.Name())
+	defer os.Unsetenv(loader.EnvConfigFile)
+
+	l := loader.File{}
+
+	var c testdata.UntaggedTestConfig
+	require.NoError(t, l.Load("a", &c))
+
+	assert.Equal(t, testdata.UntaggedTestConfig{
+		Name:        "Holland",
+		Salary:      112.34,
+		Host:        "example.com",
+		InnerStruct: testdata.UntaggedInnerStruct{Str: "test_me"},
+	}, c)
 }
