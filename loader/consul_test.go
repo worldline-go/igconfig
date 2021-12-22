@@ -2,7 +2,6 @@ package loader
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,13 +10,11 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
-	"time"
 
 	"github.com/hashicorp/consul/api"
-	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestLoadFromConsul(t *testing.T) {
@@ -94,7 +91,7 @@ snake_case_struct:
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := Consul{Client: NewConsulMock(test.consulConf)}.Load(test.name, &test.to)
+			err := Consul{Client: NewConsulMock(&test.consulConf)}.Load(test.name, &test.to)
 
 			if test.err == "" {
 				assert.NoError(t, err)
@@ -115,51 +112,7 @@ func TestNewConsuler_WrongAddr(t *testing.T) {
 	assert.NotNil(t, c)
 }
 
-func TestConsul_DynamicValue(t *testing.T) {
-	t.Skip("currently DynamicValue is experimental")
-	// Start with 5 so we will be able to output some same-value and same-index variables.
-	var consulCalls = 5
-	var configPath = path.Join("app", "field")
-
-	zerolog.TimeFieldFormat = time.RFC3339Nano
-	consuler := ConsulMock{kvFunc: func(keyPath string) (*api.KVPair, *api.QueryMeta, bool) {
-		require.True(t, strings.HasPrefix(keyPath, configPath), "requested config path")
-
-		consulCalls++
-
-		if consulCalls > 6 {
-			// Simulate waiting for new value.
-			// Consul returns in two cases: when value is updated or on timeout.
-			time.Sleep(201 * time.Millisecond)
-		}
-
-		return &api.KVPair{Key: keyPath, Value: []byte(strconv.Itoa(consulCalls / 5))},
-			&api.QueryMeta{LastIndex: uint64(consulCalls / 5)},
-			true
-	}}
-
-	consul := Consul{Client: NewConsulMock(consuler)}
-	seenVals := map[string]int{}
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-
-	err := consul.DynamicValue(ctx, DynamicConfig{
-		AppName:   "app",
-		FieldName: "field",
-		Runner: func(value []byte) error {
-			seenVals[string(value)]++
-
-			return nil
-		},
-	})
-
-	assert.Equal(t, 6, consulCalls-5)
-	assert.Equal(t, map[string]int{"1": 1, "2": 1}, seenVals)
-	assert.Equal(t, context.DeadlineExceeded, err)
-}
-
-func NewConsulMock(mockConfig ConsulMock) *api.Client {
+func NewConsulMock(mockConfig *ConsulMock) *api.Client {
 	cl, _ := api.NewClient(&api.Config{
 		HttpClient: &http.Client{
 			Transport: mockConfig,
@@ -170,12 +123,14 @@ func NewConsulMock(mockConfig ConsulMock) *api.Client {
 }
 
 type ConsulMock struct {
-	kvFunc func(keyPath string) (*api.KVPair, *api.QueryMeta, bool)
-	kv     map[string][]byte
-	err    error
+	kvFunc    func(keyPath string) (*api.KVPair, *api.QueryMeta, bool)
+	kv        map[string][]byte
+	lock      sync.RWMutex
+	LastIndex uint64
+	err       error
 }
 
-func (m ConsulMock) RoundTrip(request *http.Request) (*http.Response, error) {
+func (m *ConsulMock) RoundTrip(request *http.Request) (*http.Response, error) {
 	reqURI := request.URL.RequestURI()
 
 	switch {
@@ -203,7 +158,7 @@ func (m ConsulMock) RoundTrip(request *http.Request) (*http.Response, error) {
 	return nil, fmt.Errorf("%s %s", request.Method, request.URL.RequestURI())
 }
 
-func (m ConsulMock) Get(key string, q *api.QueryOptions) (*api.KVPair, *api.QueryMeta, error) {
+func (m *ConsulMock) Get(key string, q *api.QueryOptions) (*api.KVPair, *api.QueryMeta, error) {
 	if m.err != nil {
 		return nil, nil, m.err
 	}
@@ -211,11 +166,20 @@ func (m ConsulMock) Get(key string, q *api.QueryOptions) (*api.KVPair, *api.Quer
 	var data = &api.KVPair{
 		Key: key,
 	}
-	var meta *api.QueryMeta
+
+	m.lock.RLock()
+	var meta = &api.QueryMeta{
+		LastIndex: m.LastIndex,
+	}
+	m.lock.RUnlock()
 
 	var ok bool
 
-	data.Value, ok = m.kv[key]
+	if inx := strings.Index(key, "?index"); inx != -1 {
+		key = key[:inx]
+	}
+
+	data.Value, ok = m.GetKey(key)
 	if !ok {
 		if m.kvFunc == nil {
 			return nil, nil, nil
@@ -225,6 +189,21 @@ func (m ConsulMock) Get(key string, q *api.QueryOptions) (*api.KVPair, *api.Quer
 	}
 
 	return data, meta, nil
+}
+
+func (m *ConsulMock) SetKey(key string, value []byte) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	m.kv[key] = value
+	m.LastIndex++
+}
+
+func (m *ConsulMock) GetKey(key string) (val []byte, ok bool) {
+	m.lock.RLock()
+	defer m.lock.RUnlock()
+	val, ok = m.kv[key]
+
+	return
 }
 
 func generateMetaHeader(meta *api.QueryMeta) http.Header {

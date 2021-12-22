@@ -344,7 +344,14 @@ export CONSUL_HTTP_ADDR="localhost:8500"
 go run _example/readFromAll/main.go
 ```
 
-Get Dynamically changes (CHANGEABLE IN FUTURE)
+</details>
+
+<details><summary>Example usage of Consul dynamic listen</summary>
+
+If you want to listen a key, our function is easily usable.  
+While listening a key, you can restart consul server or close or not even started yet or delete key, it is totally safe.
+
+Check example to get information:
 
 ```sh
 export CONSUL_HTTP_ADDR="localhost:8500"

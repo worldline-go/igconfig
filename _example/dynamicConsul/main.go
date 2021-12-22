@@ -3,47 +3,42 @@ package main
 import (
 	"context"
 	"fmt"
-	"sync"
+	"os"
+	"time"
 
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/loader"
 )
 
 func main() {
-	consul := loader.Consul{}
-	consul.Client, _ = loader.NewConsulFromEnv()
+	// pretty logging
+	log.Logger = zerolog.New(
+		zerolog.ConsoleWriter{
+			Out: os.Stderr,
+			FormatTimestamp: func(i interface{}) string {
+				parse, _ := time.Parse(time.RFC3339, i.(string))
 
-	updateHandler := func(input []byte) error {
-		if input == nil {
-			return nil
-		}
+				return parse.Format("2006-01-02 15:04:05")
+			},
+		}).With().Timestamp().Caller().Logger()
 
-		fmt.Println(string(input))
+	// get logger context for config
+	rootCtx, cancelRootCtx := context.WithCancel(context.Background())
 
-		return nil
+	defer cancelRootCtx()
+
+	log.Logger.Debug().Msg("dynamic listening starting")
+
+	ch, err := loader.Consul{}.DynamicValue(rootCtx, "test")
+	if err != nil {
+		log.Logger.Debug().Err(err).Msg("uupps")
+
+		return
 	}
 
-	// This context will handle cancellation for DynamicUpdate.
-	// Meaning that when this context will be canceled - DynamicValue will also be stopped.
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	wg := sync.WaitGroup{}
-
-	wg.Add(1)
-
-	go func() {
-		defer wg.Done()
-
-		for {
-			err := consul.DynamicValue(ctx, loader.DynamicConfig{
-				AppName:   "test",
-				FieldName: "", // This can also be sub-key: 'struct/inner/field'
-				Runner:    updateHandler,
-			})
-
-			fmt.Println(err.Error())
-		}
-	}()
-
-	wg.Wait()
+	// get []byte
+	for v := range ch {
+		fmt.Printf("%s\n", v)
+	}
 }
