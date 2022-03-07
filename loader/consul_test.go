@@ -32,14 +32,14 @@ func TestLoadFromConsul(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		consulConf ConsulMock
+		consulConf *ConsulMock
 		to         res
 		result     res
 		err        string
 	}{
 		{
 			name: "test-json",
-			consulConf: ConsulMock{kv: map[string][]byte{
+			consulConf: &ConsulMock{kv: map[string][]byte{
 				"test-json": []byte(`{untaggedStr: 'untag value', camelCaseStr: 'camel case value', camelCaseInt: 64, camelCaseStruct: {slice: [one, two]}, snake_case_int: 55, snake_case_struct: {slice: [one, two, three four]}}`),
 			}},
 			result: res{
@@ -53,7 +53,7 @@ func TestLoadFromConsul(t *testing.T) {
 		},
 		{
 			name: "test-yaml",
-			consulConf: ConsulMock{kv: map[string][]byte{
+			consulConf: &ConsulMock{kv: map[string][]byte{
 				"test-yaml": []byte(`
 untaggedStr: test
 camelCaseStr: 'camel case value'
@@ -80,18 +80,18 @@ snake_case_struct:
 		},
 		{
 			name:       "no-key",
-			consulConf: ConsulMock{kv: map[string][]byte{}},
+			consulConf: &ConsulMock{kv: map[string][]byte{}},
 		},
 		{
 			name:       "error",
-			consulConf: ConsulMock{err: errors.New("test error")},
+			consulConf: &ConsulMock{err: errors.New("test error")},
 			err:        "test error",
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := Consul{Client: NewConsulMock(&test.consulConf)}.Load(test.name, &test.to)
+			err := Consul{Client: NewConsulMock(test.consulConf)}.Load(test.name, &test.to)
 
 			if test.err == "" {
 				assert.NoError(t, err)

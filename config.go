@@ -11,7 +11,7 @@ import (
 	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/loader"
 )
 
-var DefaultLoaders = [...]loader.Loader{
+var DefaultLoaders = []loader.Loader{
 	&loader.Default{},
 	&loader.Consul{},
 	&loader.Vault{},
@@ -28,7 +28,7 @@ func LoadConfig(appName string, c interface{}) error {
 // command-line parameters (the latter override the former) into a config struct.
 // This is a convenience function encapsulating all individual loaders specified in DefaultLoaders.
 func LoadConfigWithContext(ctx context.Context, appName string, c interface{}) error {
-	return LoadWithLoadersWithContext(ctx, appName, c, DefaultLoaders[:]...)
+	return LoadWithLoadersWithContext(ctx, appName, c, DefaultLoaders...)
 }
 
 func LoadWithLoaders(appName string, configStruct interface{}, loaders ...loader.Loader) error {

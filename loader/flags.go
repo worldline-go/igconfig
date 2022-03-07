@@ -37,40 +37,40 @@ const CmdTag = "cmd"
 // This means that if tag is 'cmd:"tag,t"' - only "tag" will be used as command line.
 // This might be changed in the future.
 type Flags struct {
-	// NoUsage may be used to silence usage on invalid flags.
-	NoUsage bool
 	// Args to give manually read from flags default os.Args[1:]
 	Args []string
+	// NoUsage may be used to silence usage on invalid flags.
+	NoUsage bool
 }
 
-func (f Flags) LoadWithContext(_ context.Context, _ string, to interface{}) error {
-	if f.Args == nil {
-		f.Args = os.Args[1:]
+func (l Flags) LoadWithContext(_ context.Context, _ string, to interface{}) error {
+	if l.Args == nil {
+		l.Args = os.Args[1:]
 	}
 
-	return f.LoadSlice(to, f.Args)
+	return l.LoadSlice(to, l.Args)
 }
 
-func (f Flags) Load(_ string, to interface{}) error {
-	return f.LoadWithContext(context.TODO(), "", to)
+func (l Flags) Load(_ string, to interface{}) error {
+	return l.LoadWithContext(context.TODO(), "", to)
 }
 
 // LoadCmdline loads config values from the command line.
-func (f Flags) LoadSlice(to interface{}, args []string) error {
+func (l Flags) LoadSlice(to interface{}, args []string) error {
 	if len(args) == 0 {
 		return nil
 	}
 
 	flags := flag.FlagSet{}
 
-	if f.NoUsage {
+	if l.NoUsage {
 		flags.Usage = func() {}
 	}
 
 	it := internal.StructIterator{
 		Value:         to,
 		FieldNameFunc: internal.FieldNameWithSeparator(CmdTag, "-", strings.ToLower),
-		IteratorFunc:  f.AddFlagsIterator(&flags),
+		IteratorFunc:  l.AddFlagsIterator(&flags),
 	}
 
 	if err := it.Iterate(); err != nil {
@@ -81,19 +81,19 @@ func (f Flags) LoadSlice(to interface{}, args []string) error {
 		return fmt.Errorf("flags parsing error: %s", err.Error())
 	}
 
-	it.IteratorFunc = f.ProcessFlagsIterator(flags)
+	it.IteratorFunc = l.ProcessFlagsIterator(flags)
 
 	return it.Iterate()
 }
 
 // FieldNameFunc returns a field name retrieved from `cmd` tag,
 // concatenated with '-'(minus sign) and lowercased.
-func (f Flags) FieldNameFunc(outer string, field reflect.StructField) string {
+func (l Flags) FieldNameFunc(outer string, field reflect.StructField) string {
 	return internal.FieldNameWithSeparator(CmdTag, "-", strings.ToLower)(outer, field)
 }
 
 // AddFlagsIterator is the function to add flags to a specified flag set.
-func (f Flags) AddFlagsIterator(set *flag.FlagSet) internal.IteratorFunc {
+func (l Flags) AddFlagsIterator(set *flag.FlagSet) internal.IteratorFunc {
 	return func(fieldName string, field reflect.Value) error {
 		setFlagForKind(set, field.Type().Kind(), fieldName, field)
 
@@ -102,7 +102,7 @@ func (f Flags) AddFlagsIterator(set *flag.FlagSet) internal.IteratorFunc {
 }
 
 // ProcessFlagsIterator is the function to set flag values based on already parsed flags.
-func (f Flags) ProcessFlagsIterator(set flag.FlagSet) internal.IteratorFunc {
+func (l Flags) ProcessFlagsIterator(set flag.FlagSet) internal.IteratorFunc {
 	return func(fieldName string, field reflect.Value) error {
 		// Flag will always be defined, as guaranteed by previous iteration.
 		fl := set.Lookup(fieldName)

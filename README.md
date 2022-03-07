@@ -1,33 +1,54 @@
-[![pipeline status](https://gitlab.test.igdcs.com/finops/utils/basics/igconfig/badges/master/pipeline.svg)](https://gitlab.test.igdcs.com/finops/utils/basics/igconfig/commits/master)
-[![coverage report](https://gitlab.test.igdcs.com/finops/utils/basics/igconfig/badges/master/coverage.svg)](https://gitlab.test.igdcs.com/finops/utils/basics/igconfig/commits/master)
-[![Quality Gate Status](https://am2vm2329.test.igdcs.com/api/project_badges/measure?project=utils%2Fbasics%2Figconfig&metric=alert_status)](https://am2vm2329.test.igdcs.com/dashboard?id=utils%2Fbasics%2Figconfig)
+# igconfig
 
-# igconfig package
-
-igconfig package can be used to load configuration values from a configuration file,
+This package can be used to load configuration values from a configuration file,
 environment variables, Consul, Vault and/or command-line parameters.
-
-## Requirements
-This package does not require any external packages.
 
 ## Install
 Add this package to `go.mod`:
 
-```go
-require (
- gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2 latest
-)
+```sh
+go get gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2
 ```
+
+## Example
+
+__cfg__ and __secret__ tag values are case insensitive so __NetworkName__, __networkname__ or __NeTWoKNaMe__ are same.
+
+```go
+type Config struct {
+    NetworkName string `cfg:"networkName" env:"NETWORK_NAME" secret:"networkName"`
+	// application specific vault
+	DBSchema     string `cfg:"dbSchema"     env:"SCHEMA"       secret:"dbSchema,loggable" default:"transaction"`
+	DBDataSource string `cfg:"dbDataSource" env:"DBDATASOURCE" secret:"dbDataSource"`
+	DBType       string `cfg:"dbType"       env:"DBTYPE"       secret:"dbType,loggable" default:"pgx"`
+
+	CustomConfig map[string]interface{} `cfg:"customConfig" secret:"customConfig,loggable"`
+}
+
+// ---
+
+var cfg Config
+
+if err := igconfig.LoadConfig("myappname", &cfg); err != nil {
+    log.Fatal().Err(err).Msg("unable to load configuration settings.")
+}
+```
+
+Also check example:  
+[Examples section](#examples)  
+[Example usage _example/readFromAll/main.go](_example/readFromAll/main.go)
 
 ## Description
 There is only a single exported function:
-```
+```go
 func LoadConfig(appName string, config interface{}) error
 ```
 or if specific loaders needed:
-```
+```go
 func LoadWithLoaders(appName string, configStruct interface{}, loaders ...loader.Loader) error
 ```
+
+There are also context accepted functions `LoadConfigWithContext`, `LoadWithLoadersWithContext`.
 
 - `appName` is name of application. It is used in Consul and Vault to find proper path for variables.
 - `config` must be a pointer to struct. Otherwise, the function will fail with an error.
@@ -84,13 +105,32 @@ Loaders are actual specification on how fields should be filled.
 
 Below is a sorted list of currently provided loaders that are included by default(if not stated otherwise)
 
+Change order of loaders and configurations:
+
+```go
+// this is the default loaders; change configurations and order or eliminate some loaders
+loaders := []loader.Loader{
+	&loader.Default{},
+	&loader.Consul{},
+	&loader.Vault{},
+	&loader.File{},
+	&loader.Env{},
+	&loader.Flags{},
+}
+
+// read configurations with custom loaders
+if err := igconfig.LoadWithLoaders("test", &conf, loaders...); err != nil {
+    log.Fatal().Err(err).Msg("unable to load configuration settings.")
+}
+```
+
 ### Default
 This loader uses `default` tag to get value for fields.
 
 ### Consul
 Loads configuration from Consul and uses map decoder with `cfg` tag to decode data from Consul to a struct.
 
-If you not give `CONSUL_HTTP_ADDR` as environment variable, this config will skip!
+If not give `CONSUL_HTTP_ADDR` as environment variable, this config will skip!
 
 For connection to Consul server you need to set some of environment variables.
 
@@ -139,14 +179,27 @@ First Vault loads in `finops/data/generic` path and after that process applicati
 
 `generic` path can have inner path, vault loader combine them.
 
-If you not give any of `VAULT_ADDR`, `VAULT_AGENT_ADDR` or `CONSUL_HTTP_ADDR` as environment variable, this config will skip!
+To use additional path to load with appname set `AdditionalPaths` value in the loader.  
+Default value is `[{Map: "", Name: "generic"}]`, Map is a wrapper for read value in key-value format, generic doesn't have map value so it will apply what read and append directly in our config.
+
+To read more than one path, just append your path to the loader.VaultSecretAdditionalPaths slice.
+
+Use `Map` value to wrap readed data with a key and `Name` is a path of configuration.
+```go
+loader.VaultSecretAdditionalPaths = append(
+    loader.VaultSecretAdditionalPaths,
+    loader.AdditionalPath{Map: "loadtest", Name: "loadtest"},
+)
+```
+
+If not given any of `VAULT_ADDR`, `VAULT_AGENT_ADDR` or `CONSUL_HTTP_ADDR` as environment variable, this config will skip!
 
 If `CONSUL_HTTP_ADDR` exists, it uses Consul to get vault address.
 
 | Envrionment Variable | Meaning
 | --- | --- |
 | CONSUL_HTTP_ADDR | get VAULT_ADDR from this consul server with vault service tag name. |
-| VAULT_ADDR |  the address of the Vault server. This should be a complete URL such as "http://vault.example.com". If you need a custom SSL cert or want to enable insecure mode, you need to specify a custom HttpClient. |
+| VAULT_ADDR |  the address of the Vault server. This should be a complete URL such as "http://vault.example.com". If need a custom SSL cert or enable insecure mode, you need to specify a custom HttpClient. |
 | VAULT_AGENT_ADDR | the address of the local Vault agent. This should be a complete URL such as "http://vault.example.com". |
 | VAULT_MAX_RETRIES |  controls the maximum number of times to retry when a 5xx error occurs. Set to 0 to disable retrying. Defaults to 2 (for a total of three tries).  |
 | VAULT_RATE_LIMIT | EX: `rateFloat:brustInt` |
@@ -168,7 +221,7 @@ For authentication path is `auth/approle/login` and you should set additional en
 ### File
 YAML and JSON files supported, and file path should be located on __CONFIG_FILE__ env variable.  
 If that environment variable not found, file loader check working directory and `/etc` path
-with this formation `<appName>.[yml|yaml|json]` (if you have same `appName` with different suffixes, order is `yml > yaml > json`).  
+with this formation `<appName>.[yml|yaml|json]` (if there is more than `appName` with different suffixes, order is `yml > yaml > json`).  
 The appName used as the file name is not the full name, only the part after the last slash.
 So if your app name is `transactions/consumers/internal/apm/`,
 the loader will try to load a file with the name `apm`.
@@ -189,7 +242,7 @@ even if tag specifies lower- or mixed-case.
 Once a match is found the value from the corresponding environment variable is placed
 in the struct field, and no further comparisons will be done for that field.
 
-If you want to set value in inner struct:
+Set value in inner struct:
 ```go
 type Config struct {
     Inner Inner
@@ -220,15 +273,19 @@ For boolean struct fields the command-line parameter is checked as a flag.
 For all other field types the command-line parameter should have a compatible value.
 Parameters can be supplied on the command-line as described in the standard Go package "flag".
 
-### Example config struct
+## Log with context
+
+Set a new zerolog logger and attach to the context, igconfig will use that context's logger.
 
 ```go
-type MyConfig struct {
-    Host string     `cfg:"hostname" env:"hostname" cmd:"h,host,hostname" default:"127.0.0.1"`
-    Port uint16     `cfg:"port" default:"8080"` // Will also define flags and will search in env based on 'cmd' tag
-    Password string `cfg:"password" secret:"password"`
-    User string     `cfg:"user" secret:"user" loggable:"true"` // Set general loggable
-    Info string     `cfg:"info" secret:"info,loggable"` // Set secret's loggable option
+// set new schemas for log
+logConfig := log.With().Str("component", "config").Logger()
+// replace context.Background() with own context
+logCtx := logConfig.WithContext(context.Background())
+
+// call igconfig with context
+if err := igconfig.LoadConfigWithContext(logCtx, "test", &conf); err != nil {
+    log.Ctx(logCtx).Fatal().Err(err).Msg("unable to load configuration settings.")
 }
 ```
 
@@ -310,6 +367,7 @@ ROLE_ID=$(vault read -field=role_id auth/approle/role/my-role/role-id)
 vault kv put finops/generic/keycloack @_example/readFromAll/dataVault/generic_keycloack.json
 vault kv put finops/generic/super-secret @_example/readFromAll/dataVault/generic_supersecret.json
 vault kv put finops/test @_example/readFromAll/dataVault/test.json
+vault kv put finops/loadtest @_example/readFromAll/dataVault/loadtest.json
 ```
 
 After that add our data in your `finops` kv section. Under usually should be a `generic` section and you should add keycloack and migration in there. also add your application name data in `finops`.
@@ -334,7 +392,7 @@ Start consul agent with dev mode
 docker run -it --rm --name=dev-consul --net=host consul:1.10.4
 ```
 
-Go to `localhost:8500` webui and add key values but for our tool folder should be `finops` if you don't modify it.
+Go to `localhost:8500` webui and add key values but for our tool folder should be `finops`.
 
 It could be `yaml` or `json` format or you can handle by `codec.Decoder` interface.
 
@@ -348,7 +406,7 @@ go run _example/readFromAll/main.go
 
 <details><summary>Example usage of Consul dynamic listen</summary>
 
-If you want to listen a key, our function is easily usable.  
+To listen a key, our function is easily usable.  
 While listening a key, you can restart consul server or close or not even started yet or delete key, it is totally safe.
 
 Check example to get information:
@@ -383,7 +441,7 @@ go tool cover -html=./_out/cover.out
 
 <details><summary>JSON|YAML</summary>
 
-If you want to prepare example you can use `yq` tool for translate json to yaml or yaml to json.
+Use `yq` tool for translate json to yaml or yaml to json.
 
 ```sh
 # yaml to json

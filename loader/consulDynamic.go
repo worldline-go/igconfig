@@ -3,6 +3,7 @@ package loader
 import (
 	"context"
 	"fmt"
+	"path"
 
 	"github.com/hashicorp/consul/api"
 	"github.com/hashicorp/consul/api/watch"
@@ -34,22 +35,22 @@ import (
 //  for v := range ch {
 //    // use v here
 //  }
-func (c Consul) DynamicValue(ctx context.Context, key string) (<-chan []byte, error) {
-	if err := c.EnsureClient(); err != nil {
+func (l Consul) DynamicValue(ctx context.Context, key string) (<-chan []byte, error) {
+	if err := l.EnsureClient(); err != nil {
 		return nil, err
 	}
 
-	if c.Plan == nil {
+	if l.Plan == nil {
 		plan, err := watch.Parse(map[string]interface{}{
 			"type": "key",
-			"key":  getConsulConfigPath(key),
+			"key":  path.Join(ConsulConfigPathPrefix, key),
 		})
 		if err != nil {
 			return nil, fmt.Errorf("wath.Parse %w", err)
 		}
 
 		// set plan to watch
-		c.Plan = &Watch{
+		l.Plan = &Watch{
 			Plan: plan,
 		}
 	}
@@ -57,7 +58,7 @@ func (c Consul) DynamicValue(ctx context.Context, key string) (<-chan []byte, er
 	// not add any buffer, this is useful for getting latest change only
 	vChannel := make(chan []byte)
 
-	c.Plan.SetHandler(func(b []byte) {
+	l.Plan.SetHandler(func(b []byte) {
 		vChannel <- b
 	})
 
@@ -65,7 +66,7 @@ func (c Consul) DynamicValue(ctx context.Context, key string) (<-chan []byte, er
 		runCh := make(chan error, 1)
 
 		go func() {
-			runCh <- c.Plan.Run(c.Client)
+			runCh <- l.Plan.Run(l.Client)
 
 			// close channel if plan stopped.
 			close(vChannel)
@@ -74,7 +75,7 @@ func (c Consul) DynamicValue(ctx context.Context, key string) (<-chan []byte, er
 		// this select-case for listen ctx done and plan run result same time
 		select {
 		case <-ctx.Done():
-			c.Plan.Stop()
+			l.Plan.Stop()
 			log.Ctx(ctx).Debug().Msg("plan stopped")
 		case err := <-runCh:
 			log.Ctx(ctx).Error().Err(err).Msg("plan watching error")

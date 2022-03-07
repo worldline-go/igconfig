@@ -2,7 +2,10 @@ package loader
 
 import (
 	"context"
+	"errors"
 )
+
+var ErrNoClient = errors.New("no client available")
 
 type Loader interface {
 	// Load will load all available data to at 'to' value.

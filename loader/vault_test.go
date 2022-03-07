@@ -159,6 +159,86 @@ func TestVault_LoadGeneric(t *testing.T) {
 	}, s)
 }
 
+func TestVault_LoadAdditional(t *testing.T) {
+	secrets := map[string]interface{}{
+		"other": map[string]interface{}{
+			"field_2": "other",
+		},
+		"untagged": 54,
+	}
+
+	secretAdditional := map[string]interface{}{
+		"field_1": "one",
+	}
+
+	mock := VaultMock{
+		data: map[string]interface{}{
+			"data/generic":    secrets,
+			"data/additional": secretAdditional,
+		},
+	}
+
+	defVaultSecretAdditionalPaths := VaultSecretAdditionalPaths
+	defer func() {
+		VaultSecretAdditionalPaths = defVaultSecretAdditionalPaths
+	}()
+
+	VaultSecretAdditionalPaths = append(VaultSecretAdditionalPaths,
+		AdditionalPath{Map: "", Name: "additional"},
+	)
+
+	v := Vault{
+		Client: mock,
+	}
+
+	var s testStruct
+
+	assert.NoError(t, v.LoadGeneric(context.Background(), &s))
+	assert.Equal(t, testStruct{
+		Field1:   "one",
+		Untagged: 54,
+		Inner: inner{
+			Field2: "other",
+		},
+	}, s)
+}
+
+func TestVault_WithoutGeneric(t *testing.T) {
+	secrets := map[string]interface{}{
+		"other": map[string]interface{}{
+			"field_2": "other",
+		},
+		"untagged": 54,
+	}
+
+	secretAdditional := map[string]interface{}{
+		"field_1": "one",
+	}
+
+	mock := VaultMock{
+		data: map[string]interface{}{
+			"data/generic":    secrets,
+			"data/additional": secretAdditional,
+		},
+	}
+
+	defVaultSecretAdditionalPaths := VaultSecretAdditionalPaths
+	defer func() {
+		VaultSecretAdditionalPaths = defVaultSecretAdditionalPaths
+	}()
+
+	VaultSecretAdditionalPaths = []AdditionalPath{}
+
+	v := Vault{
+		Client: mock,
+	}
+
+	var s testStruct
+
+	assert.NoError(t, v.LoadGeneric(context.Background(), &s))
+	assert.Equal(t, testStruct{}, s)
+}
+
 func TestVault_LoadList(t *testing.T) {
 	keycloak := map[string]interface{}{
 		"field_1": "one",

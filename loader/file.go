@@ -15,9 +15,8 @@ import (
 
 var FileTag = "cfg"
 
-// ConfFileSuffixes is the list of suffix for configuration file.
+// ConfFileSuffixes is the ordered list of suffix for configuration file.
 // It is not specific for type(.yml, .yaml, .json) because it is possible to change which loader will be used.
-// YAML and JSON file type supported.
 var ConfFileSuffixes = []string{".yml", ".yaml", ".json"}
 
 // ErrNoDecoder is a serious error and not continue process.
@@ -142,6 +141,7 @@ func (l File) LoadFile(fileName string, to interface{}) error {
 // loadReader automatically choice decoder with config file suffix.
 func (l File) loadReader(reader io.Reader, to interface{}, configType string) error {
 	var decoder codec.Decoder
+
 	switch configType {
 	case ".yaml", ".yml":
 		decoder = codec.YAML{}

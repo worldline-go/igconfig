@@ -17,6 +17,13 @@ import (
 	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/internal"
 )
 
+type AdditionalPath struct {
+	// Map to wrap values to a new map with this key.
+	Map string
+	// Name to get that value.
+	Name string
+}
+
 var VaultSecretTag = "secret"
 
 // VaultRoleIDEnv specifies the name of environment a variable that holds Vault role id to authenticate with.
@@ -28,10 +35,12 @@ const VaultRoleSecretEnv = "VAULT_ROLE_SECRET" // nolint:gosec // false-positive
 // VaultSecretBasePath is the base path for secrets.
 var VaultSecretBasePath = "finops"
 
-// VaultSecretGenericPath is path for storing generic secrets.
+// VaultSecretAdditionalPaths is usable for additional secrets to load.
 // Such generic secrets might be re-used by any number of applications.
 // They must not be application specific!
-var VaultSecretGenericPath = "generic"
+var VaultSecretAdditionalPaths = []AdditionalPath{
+	{Map: "", Name: "generic"},
+}
 
 // VaultAppRoleBasePath is the base path for
 // app role authentication.
@@ -164,8 +173,6 @@ func SimpleVaultLoad(addr, token, name string, to interface{}) error {
 //  vaultLoader, NewVaulterer(addr, SetAppRole(roleID, ""))
 //  if err != nil { ... }
 //
-//  loader.VaultSecretBasePath = "some/path/"
-//
 //  err = vaultLoader.Load("adm0001s", &config)
 //  if err != nil { ... }
 func NewVaulterer(addr string, opts ...AuthOption) (loader Loader, err error) {
@@ -219,42 +226,55 @@ func SetAppRole(role, secret string) AuthOption {
 // 'name' is base secret path, or just name of application.
 // Path will be constructed as "${VaultSecretTag}/${name}".
 // By default VaultSecretTag value is "secrets/data", which allows to load secrets from root.
-func (v *Vault) LoadWithContext(ctx context.Context, appName string, to interface{}) error {
-	if err := v.LoadGeneric(ctx, to); err != nil {
+func (l *Vault) LoadWithContext(ctx context.Context, appName string, to interface{}) error {
+	if err := l.LoadGeneric(ctx, to); err != nil {
 		return err
 	}
 
-	return v.LoadFromReformat(ctx, appName, to)
+	return l.LoadFromReformat(ctx, []AdditionalPath{{Map: "", Name: appName}}, to)
 }
 
 // Load is same as LoadWithContext without context.
-func (v *Vault) Load(appName string, to interface{}) error {
-	return v.LoadWithContext(context.Background(), appName, to)
+func (l *Vault) Load(appName string, to interface{}) error {
+	return l.LoadWithContext(context.Background(), appName, to)
 }
 
 // LoadGeneric loads generic(shared) secrets from Vault.
-func (v *Vault) LoadGeneric(ctx context.Context, to interface{}) error {
-	return v.LoadFromReformat(ctx, VaultSecretGenericPath, to)
+func (l *Vault) LoadGeneric(ctx context.Context, to interface{}) error {
+	return l.LoadFromReformat(ctx, VaultSecretAdditionalPaths, to)
 }
 
-func (v *Vault) LoadFromReformat(ctx context.Context, appName string, to interface{}) error {
-	secretMap, err := v.loadSecretData(ctx, appName, true)
-	if err != nil {
-		return err
+func (l *Vault) LoadFromReformat(ctx context.Context, paths []AdditionalPath, to interface{}) error {
+	for _, path := range paths {
+		secretMap, err := l.loadSecretData(ctx, path.Name, true)
+		if err != nil {
+			return err
+		}
+
+		if path.Map != "" {
+			secretMap = map[string]interface{}{
+				path.Map: secretMap,
+			}
+		}
+
+		if err := codec.MapDecoder(secretMap, to, VaultSecretTag); err != nil {
+			//nolint:wrapcheck // not need
+			return err
+		}
 	}
 
-	return codec.MapDecoder(secretMap, to, VaultSecretTag)
+	return nil
 }
 
-func (v *Vault) loadSecretData(ctx context.Context, appName string, errCheck bool) (map[string]interface{}, error) {
-	if err := v.EnsureClient(ctx); err != nil {
+func (l *Vault) loadSecretData(ctx context.Context, appName string, errCheck bool) (map[string]interface{}, error) {
+	if err := l.EnsureClient(ctx); err != nil {
 		return nil, err
 	}
 
 	// first try to check list method
 	if strings.HasSuffix(appName, "/") {
 		// list with meta path
-		rest, err := v.list(ctx, appName)
+		rest, err := l.list(ctx, appName)
 		if err == nil {
 			return rest, err
 		}
@@ -266,14 +286,14 @@ func (v *Vault) loadSecretData(ctx context.Context, appName string, errCheck boo
 	}
 
 	// read with data path
-	rest, err := v.read(ctx, appName, errCheck)
+	rest, err := l.read(ctx, appName, errCheck)
 	if err == nil {
 		return rest, err
 	}
 
 	// second try list
 	if errors.Is(err, errUnusable) {
-		rest, err := v.list(ctx, appName)
+		rest, err := l.list(ctx, appName)
 		// dont return errUnusable
 		if !errors.Is(err, errUnusable) {
 			return rest, err
@@ -285,10 +305,10 @@ func (v *Vault) loadSecretData(ctx context.Context, appName string, errCheck boo
 	return rest, err
 }
 
-func (v *Vault) list(ctx context.Context, appName string) (map[string]interface{}, error) {
+func (l *Vault) list(ctx context.Context, appName string) (map[string]interface{}, error) {
 	appNameMeta := path.Join(VaultSecretBasePath, "metadata", appName)
 
-	pathSecret, _ := v.Client.List(appNameMeta)
+	pathSecret, _ := l.Client.List(appNameMeta)
 
 	if pathSecret != nil {
 		// combine new map and return
@@ -300,7 +320,7 @@ func (v *Vault) list(ctx context.Context, appName string) (map[string]interface{
 		}
 
 		for _, k := range keys {
-			data, err := v.loadSecretData(ctx, path.Join(appName, k.(string)), false)
+			data, err := l.loadSecretData(ctx, path.Join(appName, k.(string)), false)
 			if err != nil {
 				return nil, err
 			}
@@ -314,10 +334,10 @@ func (v *Vault) list(ctx context.Context, appName string) (map[string]interface{
 	return nil, errUnusable
 }
 
-func (v *Vault) read(ctx context.Context, appName string, errCheck bool) (map[string]interface{}, error) {
+func (l *Vault) read(ctx context.Context, appName string, errCheck bool) (map[string]interface{}, error) {
 	appNameData := path.Join(VaultSecretBasePath, "data", appName)
 
-	pathSecret, err := v.Client.Read(appNameData)
+	pathSecret, err := l.Client.Read(appNameData)
 	if err != nil {
 		// recursive call should not return error
 		// could be policy denied to read it
@@ -334,7 +354,7 @@ func (v *Vault) read(ctx context.Context, appName string, errCheck bool) (map[st
 		// Is it destroyed?
 		metadata, ok := pathSecret.Data["metadata"].(map[string]interface{})
 		if ok && isDestroyed(metadata) {
-			log.Ctx(ctx).Warn().Msgf("%s/%s is destoyed, skipping", VaultSecretBasePath, appName)
+			log.Ctx(ctx).Warn().Msgf("%s is destoyed, skipping", path.Join(VaultSecretBasePath, appName))
 
 			return nil, nil
 		}
@@ -351,17 +371,17 @@ func (v *Vault) read(ctx context.Context, appName string, errCheck bool) (map[st
 }
 
 // EnsureClient creates and sets a Vault client if needed.
-func (v *Vault) EnsureClient(ctx context.Context) error {
-	if v.Client == nil {
+func (l *Vault) EnsureClient(ctx context.Context) error {
+	if l.Client == nil {
 		var err error
 
-		v.Client, err = NewVaulterFromEnv(ctx)
+		l.Client, err = NewVaulterFromEnv(ctx)
 		if err != nil {
 			return err
 		}
 	}
 
-	if v.Client == nil {
+	if l.Client == nil {
 		return ErrNoClient
 	}
 
@@ -407,7 +427,7 @@ func FetchVaultAddrFromConsul(ctx context.Context, client *api.Client, serviceFe
 	return nil
 }
 
-// isDestroyed checks data is destroyed
+// isDestroyed checks data is destroyed.
 func isDestroyed(metadata map[string]interface{}) bool {
 	if metadata == nil {
 		return false

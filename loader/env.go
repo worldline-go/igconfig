@@ -23,31 +23,31 @@ type Env struct{}
 
 // LoadWithContext implementation for Env ignores variable name prefix.
 // We want to load env vars without Vault like prefix.
-func (e Env) LoadWithContext(_ context.Context, _ string, to interface{}) error {
+func (l Env) LoadWithContext(_ context.Context, _ string, to interface{}) error {
 	it := internal.StructIterator{
 		Value:         to,
-		FieldNameFunc: e.FieldNameFunc,
-		IteratorFunc:  e.IteratorFunc,
+		FieldNameFunc: l.FieldNameFunc,
+		IteratorFunc:  l.IteratorFunc,
 	}
 
 	return it.Iterate()
 }
 
 // Load is just same as LoadWithContext without context.
-func (e Env) Load(_ string, to interface{}) error {
-	return e.LoadWithContext(context.TODO(), "", to)
+func (l Env) Load(_ string, to interface{}) error {
+	return l.LoadWithContext(context.TODO(), "", to)
 }
 
 // FieldNameFunc returns a field function which will get name from `env` tag,
 // concatenated with '_'(underscore) and uppercased.
-func (e Env) FieldNameFunc(outer string, field reflect.StructField) string {
+func (l Env) FieldNameFunc(outer string, field reflect.StructField) string {
 	return internal.FieldNameWithSeparator(EnvTag, "_", strings.ToUpper)(outer, field)
 }
 
 // IteratorFunc sets a field to a value from environment.
 //
 // If field is not defined in environment - it is no-op.
-func (e Env) IteratorFunc(fieldName string, field reflect.Value) error {
+func (l Env) IteratorFunc(fieldName string, field reflect.Value) error {
 	val, ok := os.LookupEnv(fieldName)
 	if !ok {
 		return nil

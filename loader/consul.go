@@ -3,7 +3,6 @@ package loader
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -17,8 +16,6 @@ var ConsulTag = "cfg"
 
 // ConsulConfigPathPrefix specifies prefix for key search.
 var ConsulConfigPathPrefix = "finops"
-
-var ErrNoClient = errors.New("no client available")
 
 var _ Loader = Consul{}
 
@@ -61,23 +58,26 @@ type Consul struct {
 }
 
 // LoadWithContext retrieves data from Consul and decode response into 'to' struct.
-func (c Consul) LoadWithContext(ctx context.Context, appName string, to interface{}) error {
-	if err := c.EnsureClient(); err != nil {
+func (l Consul) LoadWithContext(ctx context.Context, appName string, to interface{}) error {
+	if err := l.EnsureClient(); err != nil {
 		return err
 	}
 
 	queryOptions := api.QueryOptions{}
-	data, _, err := c.Client.KV().Get(getConsulConfigPath(appName), queryOptions.WithContext(ctx))
+	data, _, err := l.Client.KV().Get(
+		path.Join(ConsulConfigPathPrefix, appName),
+		queryOptions.WithContext(ctx),
+	)
 	// If no data or err is returned - return early.
 	if data == nil || err != nil {
 		return err
 	}
 
-	if c.Decoder == nil {
-		c.Decoder = codec.YAML{}
+	if l.Decoder == nil {
+		l.Decoder = codec.YAML{}
 	}
 
-	if err := codec.LoadReaderWithDecoder(bytes.NewReader(data.Value), to, c.Decoder, ConsulTag); err != nil {
+	if err := codec.LoadReaderWithDecoder(bytes.NewReader(data.Value), to, l.Decoder, ConsulTag); err != nil {
 		return fmt.Errorf("Consul.LoadWithContext error: %w", err)
 	}
 
@@ -85,22 +85,22 @@ func (c Consul) LoadWithContext(ctx context.Context, appName string, to interfac
 }
 
 // Load is just same as LoadWithContext without context.
-func (c Consul) Load(appName string, to interface{}) error {
-	return c.LoadWithContext(context.Background(), appName, to)
+func (l Consul) Load(appName string, to interface{}) error {
+	return l.LoadWithContext(context.Background(), appName, to)
 }
 
 // EnsureClient creates and sets a Consul client if needed.
-func (c *Consul) EnsureClient() error {
-	if c.Client == nil {
+func (l *Consul) EnsureClient() error {
+	if l.Client == nil {
 		var err error
 
-		c.Client, err = NewConsulFromEnv()
+		l.Client, err = NewConsulFromEnv()
 		if err != nil {
 			return err
 		}
 	}
 
-	if c.Client == nil {
+	if l.Client == nil {
 		return ErrNoClient
 	}
 
@@ -111,12 +111,12 @@ func (c *Consul) EnsureClient() error {
 //
 // This provides a bit nicer interface on fetching services
 // and gives ability to have LiveServiceFetcher as an argument or a field instead of actual implementation.
-func (c *Consul) SearchLiveServices(ctx context.Context, name string, tags []string) ([]*api.ServiceEntry, error) {
-	if err := c.EnsureClient(); err != nil {
+func (l *Consul) SearchLiveServices(ctx context.Context, name string, tags []string) ([]*api.ServiceEntry, error) {
+	if err := l.EnsureClient(); err != nil {
 		return nil, err
 	}
 
-	services, _, err := c.Client.Health().ServiceMultipleTags(name, tags, true, (&api.QueryOptions{}).WithContext(ctx))
+	services, _, err := l.Client.Health().ServiceMultipleTags(name, tags, true, (&api.QueryOptions{}).WithContext(ctx))
 	if err != nil {
 		return nil, fmt.Errorf("fetch service instances: %w", err)
 	}
@@ -149,8 +149,4 @@ func NewConsulWithConfig(config *api.Config) (*api.Client, error) {
 	}
 
 	return cl, err
-}
-
-func getConsulConfigPath(parts ...string) string {
-	return path.Join(append([]string{ConsulConfigPathPrefix}, parts...)...)
 }

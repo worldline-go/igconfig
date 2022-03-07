@@ -2,6 +2,6 @@
     "appPort": 8080,
     "test": "testing",
     "migrations": {
-        "dbdatasource": "postgres://secret@10.63.80.75:5433/boteu1"
+        "dbDataSource": "postgres://secret@10.63.80.75:5433/boteu1"
     }
 }
