@@ -252,6 +252,21 @@ func TestMapDecoder(t *testing.T) {
 		Inner    inner `secret:"other"`
 	}
 
+	type innerDef struct {
+		Field2 string `cfg:"field_2"`
+	}
+
+	type testStructDef struct {
+		Field1   string  `cfg:"field_1"`
+		Value    float64 `secret:"value"`
+		ValueInt int     `secret:"valueInt"`
+		Untagged int64
+		NoSet    string `secret:"-"`
+		NoData   string `cfg:"missing"`
+		Time     time.Time
+		Inner    innerDef `secret:"other"`
+	}
+
 	type args struct {
 		input  interface{}
 		output interface{}
@@ -287,6 +302,34 @@ func TestMapDecoder(t *testing.T) {
 				Inner: inner{
 					Field2: "other",
 				},
+			},
+		},
+		{
+			args: args{
+				input: &map[string]interface{}{
+					"field_1":  "one",
+					"value":    64,
+					"valueInt": 64,
+					"noset":    "not_empty",
+					"other": map[string]interface{}{
+						"field_2": "other",
+					},
+					"untagged": 54,
+					"missing":  "diff",
+				},
+				output: &testStructDef{},
+				tag:    "secret",
+			},
+			wantErr: false,
+			want: &testStructDef{
+				Field1:   "one",
+				Value:    64,
+				ValueInt: 64,
+				Untagged: 54,
+				Inner: innerDef{
+					Field2: "other",
+				},
+				NoData: "diff",
 			},
 		},
 	}

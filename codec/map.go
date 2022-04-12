@@ -6,6 +6,8 @@ import (
 	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/reformat.git"
 )
 
+var BackupTagName = "cfg"
+
 // MapDecoder implements the reformat package,
 // it exposes functionality to convert an arbitrary map[string]interface{}
 // into a native Go structure with given tag name.
@@ -18,6 +20,7 @@ func MapDecoder(input, output interface{}, tag string) error {
 		Metadata:         nil,
 		Result:           output,
 		TagName:          tag,
+		BackupTagName:    BackupTagName,
 	}
 
 	decoder, err := reformat.NewDecoder(cnf)

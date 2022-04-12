@@ -18,7 +18,7 @@ require (
 	github.com/pierrec/lz4 v2.6.0+incompatible // indirect
 	github.com/rs/zerolog v1.26.0
 	github.com/stretchr/testify v1.7.0
-	gitlab.test.igdcs.com/finops/nextgen/utils/basics/reformat.git v1.0.1
+	gitlab.test.igdcs.com/finops/nextgen/utils/basics/reformat.git v1.1.0
 	golang.org/x/crypto v0.0.0-20201112155050-0c6587e931a9 // indirect
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c

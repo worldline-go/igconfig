@@ -14,6 +14,8 @@ go get gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2
 
 __cfg__ and __secret__ tag values are case insensitive so __NetworkName__, __networkname__ or __NeTWoKNaMe__ are same.
 
+__NOTE__ if __secret__ tag not found it will check __cfg__ tag after that it will check variable's name.
+
 ```go
 type Config struct {
     NetworkName string `cfg:"networkName" env:"NETWORK_NAME" secret:"networkName"`
