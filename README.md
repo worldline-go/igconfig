@@ -12,7 +12,7 @@ go get gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2
 
 ## Example
 
-__cfg__ and __secret__ tag values are case insensitive so __NetworkName__, __networkname__ or __NeTWoKNaMe__ are same.
+__cfg__ and __secret__ tag values are case insensitive and weakly dash/underscore so __Network-Name__, __network_name__ or __NeTWoK-NaMe__ are same.
 
 __NOTE__ if __secret__ tag not found it will check __cfg__ tag after that it will check variable's name.
 

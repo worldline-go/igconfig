@@ -13,14 +13,15 @@ var BackupTagName = "cfg"
 // into a native Go structure with given tag name.
 func MapDecoder(input, output interface{}, tag string) error {
 	cnf := &reformat.DecoderConfig{
-		DecodeHook:       nil,
-		ErrorUnused:      false,
-		ZeroFields:       false,
-		WeaklyTypedInput: true,
-		Metadata:         nil,
-		Result:           output,
-		TagName:          tag,
-		BackupTagName:    BackupTagName,
+		DecodeHook:           nil,
+		ErrorUnused:          false,
+		ZeroFields:           false,
+		WeaklyTypedInput:     true,
+		Metadata:             nil,
+		Result:               output,
+		TagName:              tag,
+		BackupTagName:        BackupTagName,
+		WeaklyDashUnderscore: true,
 	}
 
 	decoder, err := reformat.NewDecoder(cnf)

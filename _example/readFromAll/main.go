@@ -21,7 +21,7 @@ type Config struct {
 	DBType       string `cfg:"dbType"       env:"DBTYPE"       secret:"dbType,loggable"   default:"pgx" loggable:"false"`
 
 	SuperSecret SuperSecret `cfg:"super-secret" secret:"super-secret,loggable"`
-	Test        string      `cfg:"test" secret:"test,loggable"`
+	Test        string      `cfg:"test-value"`
 
 	// generic vault secrets
 	Keycloack Keycloack
