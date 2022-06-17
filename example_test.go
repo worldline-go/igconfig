@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/rs/zerolog"
-	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2"
-	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/loader"
-	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/testdata"
+	"github.com/worldline-go/igconfig"
+	"github.com/worldline-go/igconfig/loader"
+	"github.com/worldline-go/igconfig/testdata"
 )
 
 // Example_fileLoader for getting values from file(YAML or JSON).

@@ -8,8 +8,8 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
-	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2"
-	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/loader"
+	"github.com/worldline-go/igconfig"
+	"github.com/worldline-go/igconfig/loader"
 )
 
 // Config struct detailing all project parameters.

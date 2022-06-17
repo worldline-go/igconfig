@@ -5,13 +5,13 @@ import (
 	"testing"
 	"time"
 
-	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/credential/vault"
+	"github.com/worldline-go/igconfig/credential/vault"
 
 	"github.com/hashicorp/vault/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/testdata"
+	"github.com/worldline-go/igconfig/testdata"
 )
 
 func TestGetCredentialsWithClient(t *testing.T) {

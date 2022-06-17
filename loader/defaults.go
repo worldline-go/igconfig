@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"strings"
 
-	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/internal"
+	"github.com/worldline-go/igconfig/internal"
 )
 
 var _ Loader = Default{}

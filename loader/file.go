@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/codec"
+	"github.com/worldline-go/igconfig/codec"
 )
 
 var FileTag = "cfg"

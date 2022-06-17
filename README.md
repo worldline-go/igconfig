@@ -7,7 +7,7 @@ environment variables, Consul, Vault and/or command-line parameters.
 Add this package to `go.mod`:
 
 ```sh
-go get gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2
+go get github.com/worldline-go/igconfig
 ```
 
 ## Example

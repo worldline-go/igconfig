@@ -7,8 +7,8 @@ import (
 
 	"github.com/rs/zerolog/log"
 
-	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/internal"
-	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/loader"
+	"github.com/worldline-go/igconfig/internal"
+	"github.com/worldline-go/igconfig/loader"
 )
 
 var DefaultLoaders = []loader.Loader{
