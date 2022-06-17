@@ -13,8 +13,8 @@ import (
 	"github.com/hashicorp/vault/api"
 	"github.com/rs/zerolog/log"
 
-	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/codec"
-	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/internal"
+	"github.com/worldline-go/igconfig/codec"
+	"github.com/worldline-go/igconfig/internal"
 )
 
 type AdditionalPath struct {

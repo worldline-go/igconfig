@@ -4,14 +4,14 @@ import (
 	"os"
 	"testing"
 
-	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/loader"
+	"github.com/worldline-go/igconfig/loader"
 
-	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2"
+	"github.com/worldline-go/igconfig"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/testdata"
+	"github.com/worldline-go/igconfig/testdata"
 )
 
 func TestLoadConfig(t *testing.T) {

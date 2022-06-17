@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/codec"
+	"github.com/worldline-go/igconfig/codec"
 )
 
 func TestConsul_DynamicValue(t *testing.T) {

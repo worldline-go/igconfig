@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/loader"
-	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/testdata"
+	"github.com/worldline-go/igconfig/loader"
+	"github.com/worldline-go/igconfig/testdata"
 )
 
 func TestEnvValues(t *testing.T) {

@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/testdata"
+	"github.com/worldline-go/igconfig/testdata"
 )
 
 func TestSetValueWarnings(t *testing.T) {

@@ -3,7 +3,7 @@ package codec
 import (
 	"fmt"
 
-	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/reformat.git"
+	"github.com/worldline-go/reformat"
 )
 
 var BackupTagName = "cfg"
