@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/vault/api"
 )
 
+//nolint:golint
 type LogicReader func(string) (*api.Secret, error)
 
 // Database returns usable path to get database lease path for specified role.
@@ -45,8 +46,7 @@ func GetCredentials(path string) (*api.Secret, error) {
 	return GetCredentialsWithClient(cl, path)
 }
 
-// GetCredentialsWithClient
-// See GetCredentials for path description.
+// GetCredentialsWithClient see GetCredentials for path description.
 //
 // This function starts goroutine to renew secret. This is non-optional, but controlled by provided context.
 // Renew will stop when context will be canceled.

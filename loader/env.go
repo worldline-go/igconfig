@@ -11,6 +11,7 @@ import (
 
 var _ Loader = Env{}
 
+// EnvTag is a tag name for environment variable.
 const EnvTag = "env"
 
 // Env allows to load values from environmental variables.

@@ -6,6 +6,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// YAML is a yaml decoder.
 type YAML struct {
 	Strict bool
 }

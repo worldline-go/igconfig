@@ -6,6 +6,7 @@ import (
 	"github.com/worldline-go/reformat"
 )
 
+// BackupTagName is the tag name used if tagname not found in the struct tags.
 var BackupTagName = "cfg"
 
 // MapDecoder implements the reformat package,

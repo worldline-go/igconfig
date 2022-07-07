@@ -13,6 +13,7 @@ import (
 
 var _ Loader = Flags{}
 
+// CmdTag is the tag used to specify a command line flag.
 const CmdTag = "cmd"
 
 // Flags will parse CMD args.
@@ -43,6 +44,8 @@ type Flags struct {
 	NoUsage bool
 }
 
+// LoadWithContext loads config values from the command line with context.
+// Context value not used in this loader.
 func (l Flags) LoadWithContext(_ context.Context, _ string, to interface{}) error {
 	if l.Args == nil {
 		l.Args = os.Args[1:]
@@ -51,11 +54,12 @@ func (l Flags) LoadWithContext(_ context.Context, _ string, to interface{}) erro
 	return l.LoadSlice(to, l.Args)
 }
 
+// Load loads config values from the command line.
 func (l Flags) Load(_ string, to interface{}) error {
 	return l.LoadWithContext(context.TODO(), "", to)
 }
 
-// LoadCmdline loads config values from the command line.
+// LoadSlice loads config values from the command line.
 func (l Flags) LoadSlice(to interface{}, args []string) error {
 	if len(args) == 0 {
 		return nil
@@ -143,6 +147,7 @@ func setFlagForKind(flags *flag.FlagSet, fieldKind reflect.Kind, flagName string
 	}
 }
 
+//nolint:golint
 type CustomFlagVar struct {
 	Setter internal.TypeSetter
 	Val    reflect.Value
@@ -156,6 +161,7 @@ func (c CustomFlagVar) String() string {
 	return fmt.Sprint(c.Val.Interface())
 }
 
+//nolint:golint
 func (c CustomFlagVar) Set(s string) error {
 	if s == "" {
 		return nil

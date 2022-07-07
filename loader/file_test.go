@@ -24,13 +24,13 @@ innerstruct:
 
 	f, err := os.CreateTemp("", "*.yaml")
 	require.NoError(t, err)
-	defer os.Remove(f.Name())
+	defer os.Remove(f.Name()) //nolint:errcheck
 
 	_, err = f.WriteString(data)
 	require.NoError(t, err)
 
-	os.Setenv(loader.EnvConfigFile, f.Name())
-	defer os.Unsetenv(loader.EnvConfigFile)
+	os.Setenv(loader.EnvConfigFile, f.Name()) //nolint:errcheck
+	defer os.Unsetenv(loader.EnvConfigFile)   //nolint:errcheck
 
 	l := loader.File{}
 
@@ -43,12 +43,12 @@ innerstruct:
 		InnerStruct: testdata.InnerStruct{Str: "test_me"},
 	}, c)
 
-	data_ugly := `salary 32131
+	dataUgly := `salary 32131
 host: dontuseme.com
 innerstruct
   string: test_me`
 
-	_, err = f.WriteString(data_ugly)
+	_, err = f.WriteString(dataUgly)
 	require.NoError(t, err)
 
 	require.Error(t, l.Load("a", &c))
@@ -64,7 +64,7 @@ innerstruct:
 	wd, _ := os.Getwd()
 	f, err := os.Create(path.Join(wd, "app.yaml"))
 	require.NoError(t, err)
-	defer os.Remove(f.Name())
+	defer os.Remove(f.Name()) //nolint:errcheck
 
 	_, err = f.WriteString(data)
 	require.NoError(t, err)
@@ -97,7 +97,7 @@ innerstruct:
 
 	fEtc, err := os.CreateTemp("", "*.yaml")
 	require.NoError(t, err)
-	defer os.Remove(fEtc.Name())
+	defer os.Remove(fEtc.Name()) //nolint:errcheck
 
 	_, err = fEtc.WriteString(dataEtc)
 	require.NoError(t, err)
@@ -141,7 +141,7 @@ func TestFile_CHECK_ORDER(t *testing.T) {
 
 	fEtc, err := os.CreateTemp("", "*.json")
 	require.NoError(t, err)
-	defer os.Remove(fEtc.Name())
+	defer os.Remove(fEtc.Name()) //nolint:errcheck
 
 	_, err = fEtc.WriteString(dataEtc)
 	require.NoError(t, err)
@@ -154,7 +154,7 @@ innerstruct:
 	wd, _ := os.Getwd()
 	fWork, err := os.Create(path.Join(wd, "app.yaml"))
 	require.NoError(t, err)
-	defer os.Remove(fWork.Name())
+	defer os.Remove(fWork.Name()) //nolint:errcheck
 
 	_, err = fWork.WriteString(data)
 	require.NoError(t, err)
@@ -170,8 +170,8 @@ innerstruct:
 		InnerStruct: testdata.InnerStruct{Str: "test_me"},
 	}, c)
 
-	os.Setenv(loader.EnvConfigFile, fEtc.Name())
-	defer os.Unsetenv(loader.EnvConfigFile)
+	os.Setenv(loader.EnvConfigFile, fEtc.Name()) //nolint:errcheck
+	defer os.Unsetenv(loader.EnvConfigFile)      //nolint:errcheck
 
 	require.NoError(t, l.Load("app", &c))
 
@@ -197,13 +197,13 @@ innerstruct:
 
 	f, err := os.CreateTemp("", "*.yaml")
 	require.NoError(t, err)
-	defer os.Remove(f.Name())
+	defer os.Remove(f.Name()) //nolint:errcheck
 
 	_, err = f.WriteString(data)
 	require.NoError(t, err)
 
-	os.Setenv(loader.EnvConfigFile, f.Name())
-	defer os.Unsetenv(loader.EnvConfigFile)
+	os.Setenv(loader.EnvConfigFile, f.Name()) //nolint:errcheck
+	defer os.Unsetenv(loader.EnvConfigFile)   //nolint:errcheck
 
 	l := loader.File{}
 

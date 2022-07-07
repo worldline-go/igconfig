@@ -6,6 +6,7 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
+// TOML is a toml decoder.
 type TOML struct{}
 
 // Decode is a decoder function for yaml.

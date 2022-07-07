@@ -11,8 +11,6 @@ import (
 )
 
 func TestEnvValues(t *testing.T) {
-	const funcName = "TestEnvValues"
-
 	t.Setenv("NAME", "Jan")
 	t.Setenv("HOST", "127.0.0.1")
 	t.Setenv("PORT", "12345")

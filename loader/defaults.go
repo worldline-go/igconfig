@@ -10,8 +10,10 @@ import (
 
 var _ Loader = Default{}
 
+// DefaultTag is a tag name for default value.
 const DefaultTag = "default"
 
+// Default is a loader that loads config struct fields with their default value as defined in the tags.
 type Default struct{}
 
 // LoadWithContext loads the config struct fields with their default value as defined in the tags.

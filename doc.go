@@ -1,5 +1,4 @@
-/*
-This package allows to set struct values based on different input places.
+/*Package igconfig allows to set struct values based on different input places.
 
 For example struct can be filled from default values defined in tags, environmental variables or Vault secrets.
 
