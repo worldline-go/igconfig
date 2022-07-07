@@ -5,6 +5,7 @@ import (
 	"io"
 )
 
+// JSON is a json decoder.
 type JSON struct {
 	Strict bool
 }

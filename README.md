@@ -1,10 +1,13 @@
 # igconfig
 
+[![Codecov](https://img.shields.io/codecov/c/github/worldline-go/igconfig?logo=codecov&style=flat-square)](https://app.codecov.io/gh/worldline-go/igconfig)
+[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/worldline-go/igconfig/Test?logo=github&style=flat-square&label=ci)](https://github.com/worldline-go/igconfig/actions)
+[![Go Reference](https://pkg.go.dev/badge/github.com/worldline-go/igconfig.svg)](https://pkg.go.dev/github.com/worldline-go/igconfig)
+
 This package can be used to load configuration values from a configuration file,
 environment variables, Consul, Vault and/or command-line parameters.
 
 ## Install
-Add this package to `go.mod`:
 
 ```sh
 go get github.com/worldline-go/igconfig
@@ -12,17 +15,17 @@ go get github.com/worldline-go/igconfig
 
 ## Example
 
-__cfg__ and __secret__ tag values are case insensitive and weakly dash/underscore so __Network-Name__, __network_name__ or __NeTWoK-NaMe__ are same.
+__cfg__ and __secret__ tag values are case insensitive and weakly dash/underscore so __Network-Name__, __network_name__ or __NeTWoK-NaMe__ are same in both tag and configs.
 
 __NOTE__ if __secret__ tag not found it will check __cfg__ tag after that it will check variable's name.
 
 ```go
 type Config struct {
-    NetworkName string `cfg:"networkName" env:"NETWORK_NAME" secret:"networkName"`
+	NetworkName string `cfg:"networkName" env:"NETWORK_NAME" secret:"networkName"`
 	// application specific vault
 	DBSchema     string `cfg:"dbSchema"     env:"SCHEMA"       secret:"dbSchema,loggable" default:"transaction"`
-	DBDataSource string `cfg:"dbDataSource" env:"DBDATASOURCE" secret:"dbDataSource"`
-	DBType       string `cfg:"dbType"       env:"DBTYPE"       secret:"dbType,loggable" default:"pgx"`
+	DBDataSource string `cfg:"dbDataSource" env:"DBDATASOURCE" loggable:"false"`
+	DBType       string `cfg:"dbType"       env:"DBTYPE"       default:"pgx"`
 
 	CustomConfig map[string]interface{} `cfg:"customConfig" secret:"customConfig,loggable"`
 }
@@ -52,7 +55,7 @@ func LoadWithLoaders(appName string, configStruct interface{}, loaders ...loader
 
 There are also context accepted functions `LoadConfigWithContext`, `LoadWithLoadersWithContext`.
 
-- `appName` is name of application. It is used in Consul and Vault to find proper path for variables.
+- `appName` is name of application. It is used in Consul and Vault to find proper path for variables also file name for file loader.
 - `config` must be a pointer to struct. Otherwise, the function will fail with an error.
 - `loaders` is list of Loaders to use.
 
@@ -221,9 +224,9 @@ For authentication path is `auth/approle/login` and you should set additional en
 `VAULT_ROLE_ID` and `VAULT_ROLE_SECRET` environment variables.
 
 ### File
-YAML and JSON files supported, and file path should be located on __CONFIG_FILE__ env variable.  
+TOML, YAML and JSON files supported, and file path should be located on __CONFIG_FILE__ env variable.  
 If that environment variable not found, file loader check working directory and `/etc` path
-with this formation `<appName>.[yml|yaml|json]` (if there is more than `appName` with different suffixes, order is `yml > yaml > json`).  
+with this formation `<appName>.[toml|yml|yaml|json]` (if there is more than `appName` with different suffixes, order is `toml > yml > yaml > json`).  
 The appName used as the file name is not the full name, only the part after the last slash.
 So if your app name is `transactions/consumers/internal/apm/`,
 the loader will try to load a file with the name `apm`.
@@ -236,11 +239,14 @@ from the configuration file.
 __NOTE:__ if `cfg` tag not exists, it is still read values in file and match struct's field name!  
 Don't want to read a value just delete it in your config file or add `cfg:"-"`.
 
+FileLoader editable, you can add your own decoder or new file format or order of file suffixes.
+
 ### Environment variables
 For all exported fields from the config struct the name and the field tag identified by "env"
 will be checked if a corresponding environment variable is present. The tag may contain
 a list of names separated by comma's. The comparison is upper-case, 
-even if tag specifies lower- or mixed-case.
+even if tag specifies lower- or mixed-case. Lower-case environment variables are ignored.
+
 Once a match is found the value from the corresponding environment variable is placed
 in the struct field, and no further comparisons will be done for that field.
 
@@ -251,7 +257,8 @@ type Config struct {
 }
 
 type Inner struct {
-	GetENV       string `env:"TEST_ENV"`
+	GetENV       string `env:"TEST_ENV"` // env:"test_EnV" same as TEST_ENV
+	// GetENV       string `cfg:"TEST_ENV"` // cfg tag also usable
 }
 ```
 
@@ -264,6 +271,8 @@ type Config struct {
 ```
 
 Now value use `IN_TEST_ENV`
+
+__NOTE:__ if `env` tag not exists, it will check `cfg` tag and if both not exists, it will check struct's field name as uppercase.
 
 ### Flags (command-line parameters)
 For all exported fields from the config struct the tag of the field identified by "cmd"

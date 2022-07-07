@@ -13,11 +13,20 @@ import (
 	"github.com/worldline-go/igconfig/codec"
 )
 
+// FileTag is a tag name for file loader
 var FileTag = "cfg"
 
 // ConfFileSuffixes is the ordered list of suffix for configuration file.
-// It is not specific for type(.yml, .yaml, .json) because it is possible to change which loader will be used.
-var ConfFileSuffixes = []string{".yml", ".yaml", ".json"}
+// It is not specific for type(.toml .yml, .yaml, .json) because it is possible to change which loader will be used.
+var ConfFileSuffixes = []string{".toml", ".yml", ".yaml", ".json"}
+
+// FileDecoders for file extensions
+var FileDecoders = map[string]codec.Decoder{
+	".toml": codec.TOML{},
+	".yml":  codec.YAML{},
+	".yaml": codec.YAML{},
+	".json": codec.JSON{},
+}
 
 // ErrNoDecoder is a serious error and not continue process.
 var ErrNoDecoder = errors.New("decoder not found for this file type")
@@ -108,6 +117,7 @@ func (l *File) LoadEtc(appName string, to interface{}) error {
 	return l.LoadFileSuffix(filePath, to)
 }
 
+// LoadFileSuffix will load configuration from file path.
 func (l File) LoadFileSuffix(filePath string, to interface{}) error {
 	for _, s := range ConfFileSuffixes {
 		if _, err := os.Stat(filePath + s); !os.IsNotExist(err) {
@@ -119,6 +129,7 @@ func (l File) LoadFileSuffix(filePath string, to interface{}) error {
 	return ErrNoConfFile
 }
 
+// LoadEnv will load CONFIG_FILE environment variable.
 func (l File) LoadEnv(to interface{}) error {
 	if envFile := os.Getenv(EnvConfigFile); envFile != "" {
 		return l.LoadFile(envFile, to)
@@ -133,7 +144,7 @@ func (l File) LoadFile(fileName string, to interface{}) error {
 	if err != nil {
 		return fmt.Errorf("file loader: %w", err)
 	}
-	defer file.Close()
+	defer file.Close() // nolint: errcheck
 
 	return l.loadReader(file, to, filepath.Ext(fileName))
 }
@@ -142,12 +153,8 @@ func (l File) LoadFile(fileName string, to interface{}) error {
 func (l File) loadReader(reader io.Reader, to interface{}, configType string) error {
 	var decoder codec.Decoder
 
-	switch configType {
-	case ".yaml", ".yml":
-		decoder = codec.YAML{}
-	case ".json":
-		decoder = codec.JSON{}
-	default:
+	decoder, ok := FileDecoders[configType]
+	if !ok {
 		return fmt.Errorf("%w: %s", ErrNoDecoder, configType)
 	}
 

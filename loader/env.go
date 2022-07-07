@@ -11,6 +11,7 @@ import (
 
 var _ Loader = Env{}
 
+// EnvTag is a tag name for environment variable.
 const EnvTag = "env"
 
 // Env allows to load values from environmental variables.
@@ -18,7 +19,7 @@ const EnvTag = "env"
 // For consistency and best-practices of Linux environmental variables
 // only upper-case values will be used. Even if in tag it is specified in lower-case.
 //
-// Breaking change from v1: variable name will be upper-cased when doing lookup. No other cases are checked.
+// Variable name will be upper-cased when doing lookup. No other cases are checked.
 type Env struct{}
 
 // LoadWithContext implementation for Env ignores variable name prefix.

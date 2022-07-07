@@ -46,10 +46,10 @@ func TestSetReflectValueString_UnmarshalText(t *testing.T) {
 	var s struct {
 		IP net.IP
 	}
-	strIp := "10.11.12.13"
+	strIP := "10.11.12.13"
 
-	assert.NoError(t, SetStructFieldValue("IP", strIp, reflect.ValueOf(&s)))
-	assert.Equal(t, strIp, s.IP.String())
+	assert.NoError(t, SetStructFieldValue("IP", strIP, reflect.ValueOf(&s)))
+	assert.Equal(t, strIP, s.IP.String())
 }
 
 func TestSetStruct(t *testing.T) {

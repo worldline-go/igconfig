@@ -16,7 +16,7 @@ type small struct {
 	Int1               int
 	String             string
 	unexported         string
-	timeField          time.Time
+	timeField          time.Time //nolint:unused
 	Zerolog            *zerologMarshaler
 	NonPrintable       string `loggable:"false"`
 	NonPrintableSecret string `secret:"i_like_turtles"`

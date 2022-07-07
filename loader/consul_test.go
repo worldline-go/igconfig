@@ -185,7 +185,7 @@ func (m *ConsulMock) Get(key string, q *api.QueryOptions) (*api.KVPair, *api.Que
 			return nil, nil, nil
 		}
 
-		data, meta, ok = m.kvFunc(key)
+		data, meta, _ = m.kvFunc(key)
 	}
 
 	return data, meta, nil

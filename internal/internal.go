@@ -6,16 +6,22 @@ import (
 	"strings"
 )
 
+//nolint:golint
 const DefaultConfigTag = "cfg"
 
+//nolint:golint
 const SkipFieldTagValue = "-"
 
+//nolint:golint
 var ErrInputIsNotPointerOrStruct = errors.New("input value is not struct or not pointer")
 
+//nolint:golint
 var ErrNoIterValue = errors.New("no value to iterate")
 
+//nolint:golint
 type FieldNameFunc func(outerName string, currentField reflect.StructField) string
 
+//nolint:golint
 type IteratorFunc func(fieldName string, field reflect.Value) error
 
 // StructIterator allows to traverse structures and call predefined function on each field.
@@ -140,6 +146,7 @@ func FieldNameWithSeparator(tag, separator string, opts ...func(string) string) 
 	}
 }
 
+//nolint:golint
 func PlainFieldNameWithPath(outer string, currentField reflect.StructField) string {
 	if outer == "" {
 		return currentField.Name
@@ -235,6 +242,7 @@ func IsStruct(typ reflect.Type) bool {
 	return typ.Kind() == reflect.Struct && typ != TimeType
 }
 
+//nolint:golint
 func GetReflectElem(val interface{}) (reflect.Value, error) {
 	refVal := reflect.ValueOf(val)
 

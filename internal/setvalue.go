@@ -10,8 +10,10 @@ import (
 	"time"
 )
 
+//nolint:golint
 type TypeSetter func(input string, val reflect.Value) error
 
+//nolint:golint
 var SliceSeparator = ","
 
 var typeMap = map[reflect.Type]TypeSetter{
@@ -52,6 +54,7 @@ var typeMap = map[reflect.Type]TypeSetter{
 }
 var typeMapMu sync.RWMutex
 
+//nolint:golint
 var TimeType = reflect.TypeOf(time.Time{})
 
 var unmarshalTextType = reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem()
@@ -95,6 +98,7 @@ func AddCustomTypeSetter(typ interface{}, setter TypeSetter) {
 	typeMapMu.Unlock()
 }
 
+//nolint:golint
 func GetCustomSetter(typ reflect.Type) TypeSetter {
 	typeMapMu.RLock()
 	defer typeMapMu.RUnlock()
@@ -102,6 +106,7 @@ func GetCustomSetter(typ reflect.Type) TypeSetter {
 	return typeMap[typ]
 }
 
+//nolint:golint
 func SetStructFieldValue(fieldName, v string, strct reflect.Value) error {
 	strct = reflect.Indirect(strct)
 

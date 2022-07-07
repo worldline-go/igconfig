@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/consul/api"
 )
 
+// ConsulTag is a tag used to identify field name.
 var ConsulTag = "cfg"
 
 // ConsulConfigPathPrefix specifies prefix for key search.
@@ -25,10 +26,6 @@ var _ DynamicValuer = Consul{}
 //
 // If no services found - (nil, nil) will be returned.
 type LiveServiceFetcher func(ctx context.Context, name string, tags []string) ([]*api.ServiceEntry, error)
-
-type Consuler interface {
-	Get(key string, q *api.QueryOptions) (*api.KVPair, *api.QueryMeta, error)
-}
 
 // Consul is an instance of configuration loader from Consul.
 //
@@ -124,6 +121,7 @@ func (l *Consul) SearchLiveServices(ctx context.Context, name string, tags []str
 	return services, nil
 }
 
+// NewConsul creates a client from a client.
 func NewConsul(addr string) (*api.Client, error) {
 	return NewConsulWithConfig(&api.Config{Address: addr})
 }
@@ -141,6 +139,7 @@ func NewConsulFromEnv() (*api.Client, error) {
 	return NewConsulWithConfig(api.DefaultConfig())
 }
 
+// NewConsulWithConfig creates a client from a config.
 func NewConsulWithConfig(config *api.Config) (*api.Client, error) {
 	cl, err := api.NewClient(config)
 

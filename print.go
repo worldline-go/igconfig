@@ -13,10 +13,13 @@ import (
 var _ zerolog.LogObjectMarshaler = Printer{}
 
 const (
+	// LoggableTagOptionName is a tag name for loggable boolean check.
 	LoggableTagOptionName = "loggable"
-	SecretTagName         = "secret"
+	// SecretTagName is a tag name for secret loaders to prevent print it.
+	SecretTagName = "secret"
 )
 
+//nolint:golint
 type NameGetter func(t reflect.StructField) string
 
 // Printer is an implementation of zerolog.LogObjectMarshaler for marshaling struct to zerolog event.

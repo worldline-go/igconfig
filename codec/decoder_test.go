@@ -21,9 +21,14 @@ typeVehicle: train`
 	"typeVehicle": "train"
 }`
 
+	sTOML := `
+name = "hoofddrop"
+age = 1000
+typeVehicle = "train"
+`
+
 	type args struct {
-		sYAML string
-		sJSON string
+		sData map[string]string
 		to    interface{}
 	}
 	tests := []struct {
@@ -35,9 +40,12 @@ typeVehicle: train`
 		{
 			name: "Empty struct for strict mode",
 			args: args{
-				sJSON: sJSON,
-				sYAML: sYAML,
-				to:    &struct{}{},
+				sData: map[string]string{
+					"JSON": sJSON,
+					"YAML": sYAML,
+					"TOML": sTOML,
+				},
+				to: &struct{}{},
 			},
 			match:   &struct{}{},
 			wantErr: false,
@@ -45,8 +53,11 @@ typeVehicle: train`
 		{
 			name: "Full struct",
 			args: args{
-				sJSON: sJSON,
-				sYAML: sYAML,
+				sData: map[string]string{
+					"JSON": sJSON,
+					"YAML": sYAML,
+					"TOML": sTOML,
+				},
 				to: &struct {
 					Name        string `yaml:"name" json:"name"`
 					Age         int    `yaml:"age" json:"age"`
@@ -71,8 +82,11 @@ typeVehicle: train`
 		{
 			name: "Less struct",
 			args: args{
-				sJSON: sJSON,
-				sYAML: sYAML,
+				sData: map[string]string{
+					"JSON": sJSON,
+					"YAML": sYAML,
+					"TOML": sTOML,
+				},
 				to: &struct {
 					Name        string `yaml:"name" json:"name"`
 					TypeVehicle string `yaml:"typeVehicle" json:"typeVehicle"`
@@ -93,8 +107,11 @@ typeVehicle: train`
 		{
 			name: "More struct",
 			args: args{
-				sJSON: sJSON,
-				sYAML: sYAML,
+				sData: map[string]string{
+					"JSON": sJSON,
+					"YAML": sYAML,
+					"TOML": sTOML,
+				},
 				to: &struct {
 					Name        string `yaml:"name" json:"name"`
 					Age         int    `yaml:"age" json:"age"`
@@ -123,8 +140,11 @@ typeVehicle: train`
 		{
 			name: "Mix struct",
 			args: args{
-				sJSON: sJSON,
-				sYAML: sYAML,
+				sData: map[string]string{
+					"JSON": sJSON,
+					"YAML": sYAML,
+					"TOML": sTOML,
+				},
 				to: &struct {
 					Name        string `yaml:"name" json:"name"`
 					TypeVehicle string `yaml:"typeVehicle" json:"typeVehicle"`
@@ -148,29 +168,24 @@ typeVehicle: train`
 		},
 	}
 
-	jsonDecoder := JSON{}
-	yamlDecoder := YAML{}
+	decoders := map[string]Decoder{
+		"YAML": YAML{},
+		"JSON": JSON{},
+		"TOML": TOML{},
+	}
 
 	for _, tt := range tests {
-		t.Run(tt.name+" YAML", func(t *testing.T) {
-			if err := yamlDecoder.Decode(strings.NewReader(tt.args.sYAML), tt.args.to); (err != nil) != tt.wantErr {
-				t.Errorf("YAML.Decode() error = %v, wantErr %v", err, tt.wantErr)
-			}
+		for k, v := range decoders {
+			t.Run(tt.name+" "+k, func(t *testing.T) {
+				if err := v.Decode(strings.NewReader(tt.args.sData[k]), tt.args.to); (err != nil) != tt.wantErr {
+					t.Errorf("%s.Decode() error = %v, wantErr %v", k, err, tt.wantErr)
+				}
 
-			if !assert.ObjectsAreEqualValues(tt.match, tt.args.to) {
-				t.Errorf("YAML.Decode() unmatch %+v to %+v", tt.match, tt.args.to)
-			}
-		})
-
-		t.Run(tt.name+" JSON", func(t *testing.T) {
-			if err := jsonDecoder.Decode(strings.NewReader(tt.args.sJSON), tt.args.to); (err != nil) != tt.wantErr {
-				t.Errorf("JSON.Decode() error = %v, wantErr %v", err, tt.wantErr)
-			}
-
-			if !assert.ObjectsAreEqualValues(tt.match, tt.args.to) {
-				t.Errorf("JSON.Decode() unmatch %+v to %+v", tt.match, tt.args.to)
-			}
-		})
+				if !assert.ObjectsAreEqualValues(tt.match, tt.args.to) {
+					t.Errorf("%s.Decode() unmatch %+v to %+v", k, tt.match, tt.args.to)
+				}
+			})
+		}
 	}
 }
 
@@ -187,9 +202,14 @@ typeVehicle: train`
 	"typeVehicle": "train"
 }`
 
+	sTOML := `
+name = "hoofddrop"
+age = 1000.0
+typeVehicle = "train"
+`
+
 	type args struct {
-		sYAML string
-		sJSON string
+		sData map[string]string
 		to    interface{}
 	}
 	tests := []struct {
@@ -201,9 +221,12 @@ typeVehicle: train`
 		{
 			name: "Mapped",
 			args: args{
-				sJSON: sJSON,
-				sYAML: sYAML,
-				to:    &map[string]interface{}{},
+				sData: map[string]string{
+					"JSON": sJSON,
+					"YAML": sYAML,
+					"TOML": sTOML,
+				},
+				to: &map[string]interface{}{},
 			},
 			match: &map[string]interface{}{
 				"name":        "hoofddrop",
@@ -214,25 +237,22 @@ typeVehicle: train`
 		},
 	}
 
-	jsonDecoder := JSON{}
-	yamlDecoder := YAML{}
+	decoders := map[string]Decoder{
+		"YAML": YAML{},
+		"JSON": JSON{},
+		"TOML": TOML{},
+	}
 
 	for _, tt := range tests {
-		t.Run(tt.name+" YAML", func(t *testing.T) {
-			if err := yamlDecoder.Decode(strings.NewReader(tt.args.sYAML), tt.args.to); (err != nil) != tt.wantErr {
-				t.Errorf("YAML.Decode() error = %v, wantErr %v", err, tt.wantErr)
-			}
+		for k, v := range decoders {
+			t.Run(tt.name+" "+k, func(t *testing.T) {
+				if err := v.Decode(strings.NewReader(tt.args.sData[k]), tt.args.to); (err != nil) != tt.wantErr {
+					t.Errorf("%s.Decode() error = %v, wantErr %v", k, err, tt.wantErr)
+				}
 
-			assert.EqualValues(t, tt.match, tt.args.to)
-		})
-
-		t.Run(tt.name+" JSON", func(t *testing.T) {
-			if err := jsonDecoder.Decode(strings.NewReader(tt.args.sJSON), tt.args.to); (err != nil) != tt.wantErr {
-				t.Errorf("JSON.Decode() error = %v, wantErr %v", err, tt.wantErr)
-			}
-
-			assert.EqualValues(t, tt.match, tt.args.to)
-		})
+				assert.EqualValues(t, tt.match, tt.args.to)
+			})
+		}
 	}
 }
 

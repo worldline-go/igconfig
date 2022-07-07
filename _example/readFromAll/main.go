@@ -20,7 +20,7 @@ type Config struct {
 	DBDataSource string `cfg:"dbDataSource" env:"DBDATASOURCE" secret:"dbDataSource"      loggable:"true"`
 	DBType       string `cfg:"dbType"       env:"DBTYPE"       secret:"dbType,loggable"   default:"pgx" loggable:"false"`
 
-	SuperSecret SuperSecret `cfg:"super-secret" secret:"super-secret,loggable"`
+	SuperSecret SuperSecret `cfg:"super_secret"`
 	Test        string      `cfg:"test-value"`
 
 	// generic vault secrets
@@ -79,7 +79,7 @@ func main() {
 	)
 
 	var conf Config
-	if err := igconfig.LoadConfigWithContext(ctx, "test", &conf); err != nil {
+	if err := igconfig.LoadConfigWithContext(ctx, "test2", &conf); err != nil {
 		log.Ctx(ctx).Fatal().Err(err).Msg("unable to load configuration settings.")
 	}
 

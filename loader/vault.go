@@ -17,6 +17,7 @@ import (
 	"github.com/worldline-go/igconfig/internal"
 )
 
+// AdditionalPath is used to add additional path to the Vault path.
 type AdditionalPath struct {
 	// Map to wrap values to a new map with this key.
 	Map string
@@ -24,6 +25,7 @@ type AdditionalPath struct {
 	Name string
 }
 
+// VaultSecretTag is the tag used to identify Vault secrets.
 var VaultSecretTag = "secret"
 
 // VaultRoleIDEnv specifies the name of environment a variable that holds Vault role id to authenticate with.
@@ -48,6 +50,7 @@ var VaultAppRoleBasePath = "auth/approle/login"
 
 var errUnusable = errors.New("method not usable")
 
+// Vaulter interface for Vault.
 type Vaulter interface {
 	Read(path string) (*api.Secret, error)
 	List(path string) (*api.Secret, error)
@@ -78,6 +81,7 @@ type Vault struct {
 	Client Vaulter
 }
 
+// NewVaulter creates a new Vault client.
 func NewVaulter(addr, token string) (Vaulter, error) {
 	cl, err := api.NewClient(&api.Config{Address: addr})
 	if err == nil {
@@ -244,6 +248,7 @@ func (l *Vault) LoadGeneric(ctx context.Context, to interface{}) error {
 	return l.LoadFromReformat(ctx, VaultSecretAdditionalPaths, to)
 }
 
+// LoadFromReformat loads secrets from Vault and load to the input struct 'to'.
 func (l *Vault) LoadFromReformat(ctx context.Context, paths []AdditionalPath, to interface{}) error {
 	for _, path := range paths {
 		secretMap, err := l.loadSecretData(ctx, path.Name, true)

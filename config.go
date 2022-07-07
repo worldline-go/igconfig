@@ -11,6 +11,7 @@ import (
 	"github.com/worldline-go/igconfig/loader"
 )
 
+// DefaultLoaders is a list of default loaders to use.
 var DefaultLoaders = []loader.Loader{
 	&loader.Default{},
 	&loader.Consul{},
@@ -20,6 +21,7 @@ var DefaultLoaders = []loader.Loader{
 	&loader.Flags{},
 }
 
+// LoadConfig loads a configuration struct from loaders.
 func LoadConfig(appName string, c interface{}) error {
 	return LoadConfigWithContext(context.Background(), appName, c)
 }
@@ -31,6 +33,7 @@ func LoadConfigWithContext(ctx context.Context, appName string, c interface{}) e
 	return LoadWithLoadersWithContext(ctx, appName, c, DefaultLoaders...)
 }
 
+// LoadWithLoaders loads a configuration struct from a loaders.
 func LoadWithLoaders(appName string, configStruct interface{}, loaders ...loader.Loader) error {
 	return LoadWithLoadersWithContext(context.Background(), appName, configStruct, loaders...)
 }

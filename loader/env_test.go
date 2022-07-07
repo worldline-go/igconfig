@@ -1,7 +1,6 @@
 package loader_test
 
 import (
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,26 +11,13 @@ import (
 )
 
 func TestEnvValues(t *testing.T) {
-	const funcName = "TestEnvValues"
-
-	if err := os.Setenv("HOST", "127.0.0.1"); err != nil {
-		t.Errorf("%s could not set environment variable 'HOST'", funcName)
-	}
-	if err := os.Setenv("PORT", "12345"); err != nil {
-		t.Errorf("%s could not set environment variable 'Port'", funcName)
-	}
-	if err := os.Setenv("age", "44"); err != nil {
-		t.Errorf("%s could not set environment variable 'age'", funcName)
-	}
-	if err := os.Setenv("address", "should_not_be_set"); err != nil {
-		t.Errorf("%s could not set environment variable 'address'", funcName)
-	}
-	if err := os.Setenv("INNERSTRUCT_STRING", "hello"); err != nil {
-		t.Errorf("%s could not set environment variable 'INNERSTRUCT_STRING'", funcName)
-	}
-	if err := os.Setenv("SLICE", "3,4,4"); err != nil {
-		t.Errorf("%s could not set environment variable 'SLICE'", funcName)
-	}
+	t.Setenv("NAME", "Jan")
+	t.Setenv("HOST", "127.0.0.1")
+	t.Setenv("PORT", "12345")
+	t.Setenv("age", "44")
+	t.Setenv("address", "should_not_be_set")
+	t.Setenv("INNERSTRUCT_STRING", "hello")
+	t.Setenv("SLICE", "3,4,4")
 
 	var c testdata.TestConfig
 

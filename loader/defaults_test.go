@@ -17,7 +17,7 @@ type OtherInner struct {
 type Inner struct {
 	OtherVal string `default:"other_default"`
 	OtherInner
-	unexported string   `default:"value"`
+	unexported string   `default:"value"` //nolint:unused
 	Slice      []string `default:"1,3,4,5"`
 }
 

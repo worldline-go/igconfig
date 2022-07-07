@@ -1,5 +1,4 @@
-/*
-Turns out Vault provides testing functionality to set Vault server from code.
+/*Package testdata turns out Vault provides testing functionality to set Vault server from code.
 See: https://github.com/hashicorp/vault/tree/master/vault
 
 Unfortunately it is not easy to get it working,
@@ -19,6 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// NewVaultClient returns Vault client with default configuration.
 func NewVaultClient(t *testing.T) *api.Client {
 	t.Helper()
 

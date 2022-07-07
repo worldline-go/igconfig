@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+//nolint:golint
 func MustParseTime(t *testing.T, s string) time.Time {
 	tm, err := time.ParseInLocation(time.RFC3339, s, time.Local)
 	if err != nil {
