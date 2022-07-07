@@ -16,8 +16,16 @@ import (
 var FileTag = "cfg"
 
 // ConfFileSuffixes is the ordered list of suffix for configuration file.
-// It is not specific for type(.yml, .yaml, .json) because it is possible to change which loader will be used.
-var ConfFileSuffixes = []string{".yml", ".yaml", ".json"}
+// It is not specific for type(.toml .yml, .yaml, .json) because it is possible to change which loader will be used.
+var ConfFileSuffixes = []string{".toml", ".yml", ".yaml", ".json"}
+
+// Decoders for file extensions
+var FileDecoders = map[string]codec.Decoder{
+	".toml": codec.TOML{},
+	".yml":  codec.YAML{},
+	".yaml": codec.YAML{},
+	".json": codec.JSON{},
+}
 
 // ErrNoDecoder is a serious error and not continue process.
 var ErrNoDecoder = errors.New("decoder not found for this file type")
@@ -142,12 +150,8 @@ func (l File) LoadFile(fileName string, to interface{}) error {
 func (l File) loadReader(reader io.Reader, to interface{}, configType string) error {
 	var decoder codec.Decoder
 
-	switch configType {
-	case ".yaml", ".yml":
-		decoder = codec.YAML{}
-	case ".json":
-		decoder = codec.JSON{}
-	default:
+	decoder, ok := FileDecoders[configType]
+	if !ok {
 		return fmt.Errorf("%w: %s", ErrNoDecoder, configType)
 	}
 
