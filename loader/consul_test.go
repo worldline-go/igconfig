@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"path"
 	"strconv"
@@ -143,7 +143,7 @@ func (m *ConsulMock) RoundTrip(request *http.Request) (*http.Response, error) {
 
 		httpResp := http.Response{
 			StatusCode: http.StatusOK,
-			Body:       ioutil.NopCloser(bytes.NewReader(bts)),
+			Body:       io.NopCloser(bytes.NewReader(bts)),
 		}
 
 		if kvResp == nil {

@@ -26,15 +26,16 @@ import (
 // It return a channel to get new value as []byte.
 //
 // Example:
+//
 //	ch, err := loader.Consul{}.DynamicValue(ctx, "test/dynamic")
 //	if err != nil {
 //		log.Logger.Debug().Err(err).Msg("uupps")
 //
 //		return
 //	}
-//  for v := range ch {
-//    // use v here
-//  }
+//	for v := range ch {
+//		// use v here
+//	}
 func (l Consul) DynamicValue(ctx context.Context, key string) (<-chan []byte, error) {
 	if err := l.EnsureClient(); err != nil {
 		return nil, err

@@ -20,12 +20,15 @@ const CmdTag = "cmd"
 //
 // Flags defined in inner structs will be set with
 // combination of outer flag name and inner flag name separated by '-'.
+//
 // For example:
+//
 //	type s struct{
 //		A struct{
 //			B int `cmd:"inner"`
 //		} `cmd:"outer"`
 //	}
+//
 // Field B could be set using flag '--outer-inner'.
 // This works for any depth of field.
 //
