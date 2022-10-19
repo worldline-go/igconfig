@@ -204,6 +204,7 @@ If `CONSUL_HTTP_ADDR` exists, it uses Consul to get vault address.
 | Envrionment Variable | Meaning
 | --- | --- |
 | CONSUL_HTTP_ADDR | get VAULT_ADDR from this consul server with vault service tag name. |
+| VAULT_CONSUL_ADDR_DISABLE | disable to get VAULT_ADDR from this consul server. |
 | VAULT_ADDR |  the address of the Vault server. This should be a complete URL such as "http://vault.example.com". If need a custom SSL cert or enable insecure mode, you need to specify a custom HttpClient. |
 | VAULT_AGENT_ADDR | the address of the local Vault agent. This should be a complete URL such as "http://vault.example.com". |
 | VAULT_MAX_RETRIES |  controls the maximum number of times to retry when a 5xx error occurs. Set to 0 to disable retrying. Defaults to 2 (for a total of three tries).  |
