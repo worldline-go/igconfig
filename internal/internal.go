@@ -179,6 +179,7 @@ func JoinFieldNames(outer, inner, separator string) string {
 // If no tags are provided - lowercased field name is returned.
 //
 // Note: If no such key in tag is present - DefaultConfigTag will be used to get value:
+//
 //	TagValue(field, "key") == TagValueByKeys(field, "key", DefaultConfigTag)
 //
 // See TagValueByKeys for usage examples.
@@ -197,6 +198,7 @@ func TagValue(field reflect.StructField, key string) []string {
 // no further keys will be checked.
 //
 // This function is useful to get default tag value if no requested tags have any values:
+//
 //	tagVal := TagValueByKeys(field, "highestPriority", "lowerPriority", "lowestPriority", "defaultTagKey")
 //
 // It is valid to call this function with zero or one key.

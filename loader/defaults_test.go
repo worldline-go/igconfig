@@ -22,7 +22,8 @@ type Inner struct {
 }
 
 type StructWithInner struct {
-	Val int `default:"1"`
+	Val     int  `default:"1"`
+	ValBool bool `default:"true"`
 	Inner
 }
 
@@ -58,10 +59,15 @@ func TestDefault_WithInnerStruct(t *testing.T) {
 	require.NoError(t, (loader.Default{}).Load("", &v))
 
 	assert.Equal(t,
-		StructWithInner{Val: 1,
-			Inner: Inner{OtherVal: "other_default",
-				OtherInner: OtherInner{Another: "another"},
-				Slice:      []string{"1", "3", "4", "5"},
+		StructWithInner{
+			Val:     1,
+			ValBool: true,
+			Inner: Inner{
+				OtherVal: "other_default",
+				OtherInner: OtherInner{
+					Another: "another",
+				},
+				Slice: []string{"1", "3", "4", "5"},
 			},
 		}, v)
 }

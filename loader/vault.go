@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 
@@ -61,22 +62,22 @@ type AuthOption func(*api.Client) error
 
 // Vault loads secret values from Vault instance.
 //
-// Generic secrets can also be loaded by using LoadGeneric method
+// # Generic secrets can also be loaded by using LoadGeneric method
 //
 // Example usage:
 //
-//  var config Config // some Config struct
+//	var config Config // some Config struct
 //
-//  cl, err := api.NewClient(&api.Config{Address: "http://vault:8200"})
-//  if err != nil { ... }
+//	cl, err := api.NewClient(&api.Config{Address: "http://vault:8200"})
+//	if err != nil { ... }
 //
-//  cl.SetToken("some_token") // this could be also other means of authentication.
+//	cl.SetToken("some_token") // this could be also other means of authentication.
 //
-//  vaultLoader := Vault{Client: cl}
-//  err = vaultLoader.Load("adm0001s", &config)
-//  if err != nil { ... }
+//	vaultLoader := Vault{Client: cl}
+//	err = vaultLoader.Load("adm0001s", &config)
+//	if err != nil { ... }
 //
-//  // config is now populated from Vault.
+//	// config is now populated from Vault.
 type Vault struct {
 	Client Vaulter
 }
@@ -117,10 +118,13 @@ func NewVaulterFromClient(ctx context.Context, cl *api.Client) (Vaulter, error) 
 		return nil, ErrNoClient
 	}
 
-	// Override vault address from consul
-	err := FetchVaultAddrFromConsul(ctx, cl, (&Consul{}).SearchLiveServices)
-	if err != nil && !errors.Is(err, ErrNoClient) {
-		return nil, fmt.Errorf("fetch Vault addr from Consul: %w", err)
+	err := ErrNoClient
+	if v, _ := strconv.ParseBool(os.Getenv("VAULT_CONSUL_ADDR_DISABLE")); !v {
+		// Override vault address from consul
+		err = FetchVaultAddrFromConsul(ctx, cl, (&Consul{}).SearchLiveServices)
+		if err != nil && !errors.Is(err, ErrNoClient) {
+			return nil, fmt.Errorf("fetch Vault addr from Consul: %w", err)
+		}
 	}
 
 	// not get any address with environment value
@@ -172,13 +176,13 @@ func SimpleVaultLoad(addr, token, name string, to interface{}) error {
 //
 // Example usage:
 //
-//  var config Config // some Config struct
+//	var config Config // some Config struct
 //
-//  vaultLoader, NewVaulterer(addr, SetAppRole(roleID, ""))
-//  if err != nil { ... }
+//	vaultLoader, NewVaulterer(addr, SetAppRole(roleID, ""))
+//	if err != nil { ... }
 //
-//  err = vaultLoader.Load("adm0001s", &config)
-//  if err != nil { ... }
+//	err = vaultLoader.Load("adm0001s", &config)
+//	if err != nil { ... }
 func NewVaulterer(addr string, opts ...AuthOption) (loader Loader, err error) {
 	cl, err := api.NewClient(&api.Config{Address: addr})
 	if err != nil {

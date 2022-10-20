@@ -79,6 +79,7 @@ func isTrue(str string) bool {
 // This is also the method to remove pointer type setter provided by this function.
 //
 // For example:
+//
 //	// This will add custom setter for type 'int64'
 //	AddCustomTypeSetter(int64(0), someSetter)
 //

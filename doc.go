@@ -1,4 +1,5 @@
-/*Package igconfig allows to set struct values based on different input places.
+/*
+Package igconfig allows to set struct values based on different input places.
 
 For example struct can be filled from default values defined in tags, environmental variables or Vault secrets.
 
@@ -6,7 +7,6 @@ All values in tags(except value in 'default' tag) should be lower-cased.
 Failing to make values lower-case will result in inability to properly set those fields.
 This is a choice to make lower number of mixed-cased values and generally be more in-line
 with best practices and proper usages.
-
 
 Library is basically a set of "loaders".
 

@@ -26,6 +26,7 @@ func Database(role string) string {
 // Argument 'path' can be constructed with provided functions, for example Database.
 //
 // Example:
+//
 //	s, err := GetCredentials(Database("test_app_recon"))
 //
 //	// Secret 's' is already usable, but
