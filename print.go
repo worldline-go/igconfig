@@ -27,6 +27,7 @@ type NameGetter func(t reflect.StructField) string
 // Primary use case is to add configuration struct to the log.
 //
 // Usage example:
+//
 //	conf := config.AppConfig{} // set up config value somehow
 //	// log is zerolog/log package
 //	log.Info().
@@ -132,7 +133,7 @@ func (p Printer) logTyped(ev *zerolog.Event, name string, elem reflect.Value) *z
 
 // printInterfacePrinter checks if value implements well-known print interfaces.
 //
-// Currently it checks for encoding.TextMarshaler and fmt.Stringer
+// Currently it checks for encoding.TextMarshaler and fmt.Stringer.
 //
 // If some interface method will return error - field name will have form of 'error_<field_name>'
 // (where <field_name> will be returned from NameGetter) and error will be the value.
