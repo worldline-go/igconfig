@@ -464,8 +464,11 @@ func TestVault_LoginPath(t *testing.T) {
 			}))
 			defer server.Close()
 
-			os.Setenv("VAULT_ADDR", server.URL)
-			os.Setenv(VaultAppRoleBasePathEnv, scenario.env)
+			err := os.Setenv("VAULT_ADDR", server.URL)
+			assert.NoError(t, err)
+
+			err = os.Setenv(VaultAppRoleBasePathEnv, scenario.env)
+			assert.NoError(t, err)
 
 			SetAppRole("dummy-role-id", "dummy-secret-id")
 		}()
@@ -516,7 +519,8 @@ func TestVault_SecretPath(t *testing.T) {
 			assert.NoError(t, err)
 
 			if scenario.basePath != "" {
-				os.Setenv(VaultSecretBasePathEnv, scenario.basePath)
+				err = os.Setenv(VaultSecretBasePathEnv, scenario.basePath)
+				assert.NoError(t, err)
 			}
 
 			resp := map[string]interface{}{}
