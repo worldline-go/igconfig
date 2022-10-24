@@ -36,7 +36,7 @@ const VaultRoleIDEnv = "VAULT_ROLE_ID"
 const VaultRoleSecretEnv = "VAULT_ROLE_SECRET" // nolint:gosec // false-positive
 
 // VaultAppRoleBasePathEnv specifies the name of the environment variable that holds the path to login.
-const VaultAppRoleBasePathEnv = "VAULT_APP_ROLE_BASE_PATH"
+const VaultAppRoleBasePathEnv = "VAULT_APPROLE_BASE_PATH"
 
 // VaultSecretBasePathEnv specifies the name of the environment variable that holds the base path to secrets.
 const VaultSecretBasePathEnv = "VAULT_SECRET_BASE_PATH"
