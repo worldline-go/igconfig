@@ -35,8 +35,18 @@ const VaultRoleIDEnv = "VAULT_ROLE_ID"
 // VaultRoleSecretEnv specifies the name of environment a variable that holds Vault role secret.
 const VaultRoleSecretEnv = "VAULT_ROLE_SECRET" // nolint:gosec // false-positive
 
-// VaultSecretBasePath is the base path for secrets.
-var VaultSecretBasePath = "finops"
+// VaultAppRoleBasePathEnv specifies the name of the environment variable that holds the path to login.
+const VaultAppRoleBasePathEnv = "VAULT_APP_ROLE_BASE_PATH"
+
+// VaultSecretBasePathEnv specifies the name of the environment variable that holds the base path to secrets.
+const VaultSecretBasePathEnv = "VAULT_SECRET_BASE_PATH"
+
+// VaultSecretDefaultBasePath is the base path for secrets.
+const VaultSecretDefaultBasePath = "finops"
+
+// VaultAppRoleDefaultBasePath is the default base path for
+// app role authentication.
+const VaultAppRoleDefaultBasePath = "auth/approle/login"
 
 // VaultSecretAdditionalPaths is usable for additional secrets to load.
 // Such generic secrets might be re-used by any number of applications.
@@ -44,10 +54,6 @@ var VaultSecretBasePath = "finops"
 var VaultSecretAdditionalPaths = []AdditionalPath{
 	{Map: "", Name: "generic"},
 }
-
-// VaultAppRoleBasePath is the base path for
-// app role authentication.
-var VaultAppRoleBasePath = "auth/approle/login"
 
 var errUnusable = errors.New("method not usable")
 
@@ -216,7 +222,8 @@ func SetToken(token string) AuthOption {
 // for this the secret id can be passed as blank.
 func SetAppRole(role, secret string) AuthOption {
 	return func(c *api.Client) error {
-		resp, err := c.Logical().Write(VaultAppRoleBasePath, map[string]interface{}{
+		path := internal.GetEnvWithFallback(VaultAppRoleBasePathEnv, VaultAppRoleDefaultBasePath)
+		resp, err := c.Logical().Write(path, map[string]interface{}{
 			"role_id":   role,
 			"secret_id": secret,
 		})
@@ -315,7 +322,8 @@ func (l *Vault) loadSecretData(ctx context.Context, appName string, errCheck boo
 }
 
 func (l *Vault) list(ctx context.Context, appName string) (map[string]interface{}, error) {
-	appNameMeta := path.Join(VaultSecretBasePath, "metadata", appName)
+	secretBasePath := internal.GetEnvWithFallback(VaultSecretBasePathEnv, VaultSecretDefaultBasePath)
+	appNameMeta := path.Join(secretBasePath, "metadata", appName)
 
 	pathSecret, _ := l.Client.List(appNameMeta)
 
@@ -344,7 +352,8 @@ func (l *Vault) list(ctx context.Context, appName string) (map[string]interface{
 }
 
 func (l *Vault) read(ctx context.Context, appName string, errCheck bool) (map[string]interface{}, error) {
-	appNameData := path.Join(VaultSecretBasePath, "data", appName)
+	secretBasePath := internal.GetEnvWithFallback(VaultSecretBasePathEnv, VaultSecretDefaultBasePath)
+	appNameData := path.Join(secretBasePath, "data", appName)
 
 	pathSecret, err := l.Client.Read(appNameData)
 	if err != nil {
@@ -363,7 +372,7 @@ func (l *Vault) read(ctx context.Context, appName string, errCheck bool) (map[st
 		// Is it destroyed?
 		metadata, ok := pathSecret.Data["metadata"].(map[string]interface{})
 		if ok && isDestroyed(metadata) {
-			log.Ctx(ctx).Warn().Msgf("%s is destoyed, skipping", path.Join(VaultSecretBasePath, appName))
+			log.Ctx(ctx).Warn().Msgf("%s is destoyed, skipping", path.Join(secretBasePath, appName))
 
 			return nil, nil
 		}

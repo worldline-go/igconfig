@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -205,5 +206,35 @@ func mapIterator(fieldMap map[string]string) IteratorFunc {
 		}
 
 		return SetReflectValueString(fieldName, val, field)
+	}
+}
+
+func TestGetEnvWithFallback(t *testing.T) {
+	tests := []struct {
+		name     string
+		value    string
+		fallback string
+		expected string
+	}{
+		{
+			name:     "get_value_from_environment",
+			value:    "environment-variable-value",
+			fallback: "fallback-value",
+			expected: "environment-variable-value",
+		},
+		{
+			name:     "get_value_from_fallback",
+			value:    "",
+			fallback: "fallback-value",
+			expected: "fallback-value",
+		},
+	}
+	for _, scenario := range tests {
+		t.Run(scenario.name, func(t *testing.T) {
+			err := os.Setenv("TEST_ENVIRONMENT_VAR", scenario.value)
+			assert.NoError(t, err)
+
+			assert.Equal(t, scenario.expected, GetEnvWithFallback("TEST_ENVIRONMENT_VAR", scenario.fallback))
+		})
 	}
 }

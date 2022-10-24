@@ -2,6 +2,7 @@ package internal
 
 import (
 	"errors"
+	"os"
 	"reflect"
 	"strings"
 )
@@ -253,4 +254,12 @@ func GetReflectElem(val interface{}) (reflect.Value, error) {
 	}
 
 	return refVal.Elem(), nil
+}
+
+func GetEnvWithFallback(name string, fallback string) string {
+	if val := os.Getenv(name); val != "" {
+		return val
+	}
+
+	return fallback
 }
