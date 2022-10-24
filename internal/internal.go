@@ -256,6 +256,8 @@ func GetReflectElem(val interface{}) (reflect.Value, error) {
 	return refVal.Elem(), nil
 }
 
+// GetEnvWithFallback tries to load a value from an env variable by its name and gives back a given fallback value in
+// case the requested variable is empty.
 func GetEnvWithFallback(name string, fallback string) string {
 	if val := os.Getenv(name); val != "" {
 		return val
