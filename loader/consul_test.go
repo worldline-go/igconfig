@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/worldline-go/igconfig/codec"
-	"github.com/worldline-go/igconfig/internal"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -19,6 +17,8 @@ import (
 
 	"github.com/hashicorp/consul/api"
 	"github.com/stretchr/testify/assert"
+	"github.com/worldline-go/igconfig/codec"
+	"github.com/worldline-go/igconfig/internal"
 )
 
 func TestLoadFromConsul(t *testing.T) {

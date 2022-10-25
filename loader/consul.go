@@ -4,13 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/worldline-go/igconfig/internal"
 	"os"
 	"path"
 
-	"github.com/worldline-go/igconfig/codec"
-
 	"github.com/hashicorp/consul/api"
+	"github.com/worldline-go/igconfig/codec"
+	"github.com/worldline-go/igconfig/internal"
 )
 
 // ConsulConfigDefaultPathPrefix stores the default base path for secrets.
