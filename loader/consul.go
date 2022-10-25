@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/worldline-go/igconfig/internal"
 	"os"
 	"path"
 
@@ -12,11 +13,14 @@ import (
 	"github.com/hashicorp/consul/api"
 )
 
-// ConsulTag is a tag used to identify field name.
-var ConsulTag = "cfg"
+// ConsulConfigDefaultPathPrefix stores the default base path for secrets.
+const ConsulConfigDefaultPathPrefix = "finops"
 
-// ConsulConfigPathPrefix specifies prefix for key search.
-var ConsulConfigPathPrefix = "finops"
+// ConsulConfigPathPrefixEnv holds the name of the env variable that is used to set custom path prefix.
+const ConsulConfigPathPrefixEnv = "CONSUL_CONFIG_PATH_PREFIX"
+
+// ConsulTag is a tag used to identify field name.
+const ConsulTag = "cfg"
 
 var _ Loader = Consul{}
 
@@ -62,7 +66,7 @@ func (l Consul) LoadWithContext(ctx context.Context, appName string, to interfac
 
 	queryOptions := api.QueryOptions{}
 	data, _, err := l.Client.KV().Get(
-		path.Join(ConsulConfigPathPrefix, appName),
+		path.Join(internal.GetEnvWithFallback(ConsulConfigPathPrefixEnv, ConsulConfigDefaultPathPrefix), appName),
 		queryOptions.WithContext(ctx),
 	)
 	// If no data or err is returned - return early.

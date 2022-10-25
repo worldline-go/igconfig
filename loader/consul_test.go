@@ -5,8 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/worldline-go/igconfig/codec"
+	"github.com/worldline-go/igconfig/internal"
 	"io"
 	"net/http"
+	"net/http/httptest"
+	"os"
 	"path"
 	"strconv"
 	"strings"
@@ -112,6 +116,65 @@ func TestNewConsuler_WrongAddr(t *testing.T) {
 	assert.NotNil(t, c)
 }
 
+func TestConsul_PathPrefix(t *testing.T) {
+	tests := []struct {
+		name       string
+		pathPrefix string
+	}{
+		{
+			name: "get_values_on_default_path",
+		},
+		{
+			name:       "get_values_on_custom_path",
+			pathPrefix: "finops/kv2",
+		},
+	}
+	for _, scenario := range tests {
+		func() {
+			expectedBasePath := ConsulConfigDefaultPathPrefix
+			if scenario.pathPrefix != "" {
+				expectedBasePath = scenario.pathPrefix
+			}
+
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path == fmt.Sprintf("/v1/kv/%s/hello-finops", expectedBasePath) {
+					kv := []*api.KVPair{
+						{
+							Key:   "key",
+							Value: []byte(`{"value":"test"}`),
+						},
+					}
+					resp, err := json.Marshal(kv)
+					assert.NoError(t, err)
+
+					_, err = w.Write(resp)
+					assert.NoError(t, err)
+					return
+				}
+
+				t.Errorf("Invalid request path: %s", r.URL.Path)
+				t.Fail()
+				w.WriteHeader(http.StatusNotFound)
+			}))
+			defer server.Close()
+
+			cl, err := NewConsul(server.URL)
+			assert.NoError(t, err)
+
+			loader := Consul{Client: cl}
+			loader.Decoder = codec.JSON{}
+
+			if scenario.pathPrefix != "" {
+				err = os.Setenv(ConsulConfigPathPrefixEnv, scenario.pathPrefix)
+				assert.NoError(t, err)
+			}
+
+			resp := map[string]interface{}{}
+			assert.NoError(t, loader.Load("hello-finops", &resp))
+		}()
+	}
+}
+
 func NewConsulMock(mockConfig *ConsulMock) *api.Client {
 	cl, _ := api.NewClient(&api.Config{
 		HttpClient: &http.Client{
@@ -135,7 +198,8 @@ func (m *ConsulMock) RoundTrip(request *http.Request) (*http.Response, error) {
 
 	switch {
 	case strings.HasPrefix(reqURI, "/v1/kv/"):
-		key := strings.TrimPrefix(reqURI, path.Join("/v1/kv", ConsulConfigPathPrefix)+"/")
+		key := strings.TrimPrefix(reqURI, path.Join("/v1/kv",
+			internal.GetEnvWithFallback(ConsulConfigPathPrefixEnv, ConsulConfigDefaultPathPrefix))+"/")
 
 		kvResp, meta, err := m.Get(key, nil)
 
