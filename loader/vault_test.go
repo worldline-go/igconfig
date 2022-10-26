@@ -2,6 +2,9 @@ package loader
 
 import (
 	"context"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
@@ -384,7 +387,7 @@ func (v VaultMock) Read(path string) (*api.Secret, error) {
 		return nil, v.err
 	}
 
-	path = strings.TrimPrefix(strings.TrimPrefix(path, VaultSecretBasePath), "/")
+	path = strings.TrimPrefix(strings.TrimPrefix(path, VaultSecretDefaultBasePath), "/")
 
 	data, ok := v.data[path]
 	if !ok {
@@ -401,7 +404,7 @@ func (v VaultMock) Read(path string) (*api.Secret, error) {
 }
 
 func (v VaultMock) List(path string) (*api.Secret, error) {
-	path = strings.TrimPrefix(strings.TrimPrefix(path, VaultSecretBasePath), "/")
+	path = strings.TrimPrefix(strings.TrimPrefix(path, VaultSecretDefaultBasePath), "/")
 
 	if keys, ok := v.list[path]; ok {
 		return &api.Secret{
@@ -436,24 +439,92 @@ func TestNewVaulterer_RoleID(t *testing.T) {
 	}, s)
 }
 
-func TestNewVaulterer_Token(t *testing.T) {
-	// This test requires for Vault to be running and token to be known
-	addr, token := os.Getenv("VAULT_HOST"), os.Getenv("VAULT_TOKEN")
-
-	if addr == "" || token == "" {
-		t.Skip("vault address and token must be provided")
-	}
-
-	v, err := NewVaulterer(addr, SetToken(token))
-	assert.NoError(t, err)
-
-	var s testStruct
-
-	require.NoError(t, v.Load("test", &s))
-	assert.Equal(t, testStruct{
-		Field1: "one",
-		Inner: inner{
-			Field2: "other",
+func TestVault_LoginPath(t *testing.T) {
+	tests := []struct {
+		name     string
+		env      string
+		expected string
+	}{
+		{
+			name:     "login_on_default_path",
+			env:      "",
+			expected: VaultAppRoleDefaultBasePath,
 		},
-	}, s)
+		{
+			name:     "login_on_custom_path",
+			env:      "auth/finops/approle/login",
+			expected: "auth/finops/approle/login",
+		},
+	}
+	for _, scenario := range tests {
+		func() {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, scenario.expected, r.URL.Path)
+				w.WriteHeader(http.StatusOK)
+			}))
+			defer server.Close()
+
+			err := os.Setenv("VAULT_ADDR", server.URL)
+			assert.NoError(t, err)
+
+			err = os.Setenv(VaultAppRoleBasePathEnv, scenario.env)
+			assert.NoError(t, err)
+
+			SetAppRole("dummy-role-id", "dummy-secret-id")
+		}()
+	}
+}
+
+func TestVault_SecretPath(t *testing.T) {
+	tests := []struct {
+		name     string
+		basePath string
+	}{
+		{
+			name: "get_secrets_on_default_path",
+		},
+		{
+			name:     "get_secrets_on_custom_path",
+			basePath: "finops/kv2",
+		},
+	}
+	for _, scenario := range tests {
+		func() {
+			expectedBasePath := VaultSecretDefaultBasePath
+			if scenario.basePath != "" {
+				expectedBasePath = scenario.basePath
+			}
+
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch r.URL.Path {
+				case fmt.Sprintf("/v1/%s/metadata/generic", expectedBasePath):
+					fallthrough
+				case fmt.Sprintf("/v1/%s/data/generic", expectedBasePath):
+					fallthrough
+				case fmt.Sprintf("/v1/%s/metadata/hello-finops", expectedBasePath):
+					fallthrough
+				case fmt.Sprintf("/v1/%s/data/hello-finops", expectedBasePath):
+					w.WriteHeader(http.StatusOK)
+				default:
+					t.Errorf("Invalid request path: %s", r.URL.Path)
+					t.Fail()
+					w.WriteHeader(http.StatusNotFound)
+				}
+			}))
+			defer server.Close()
+
+			v, err := NewVaulterer(server.URL, func(*api.Client) error {
+				return nil
+			})
+			assert.NoError(t, err)
+
+			if scenario.basePath != "" {
+				err = os.Setenv(VaultSecretBasePathEnv, scenario.basePath)
+				assert.NoError(t, err)
+			}
+
+			resp := map[string]interface{}{}
+			assert.NoError(t, v.Load("hello-finops", &resp))
+		}()
+	}
 }

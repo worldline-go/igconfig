@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/consul/api/watch"
 	"github.com/hashicorp/go-hclog"
 	"github.com/rs/zerolog/log"
+	"github.com/worldline-go/igconfig/internal"
 )
 
 // DynamicValue allows to get dynamically updated values at a runtime.
@@ -44,7 +45,7 @@ func (l Consul) DynamicValue(ctx context.Context, key string) (<-chan []byte, er
 	if l.Plan == nil {
 		plan, err := watch.Parse(map[string]interface{}{
 			"type": "key",
-			"key":  path.Join(ConsulConfigPathPrefix, key),
+			"key":  path.Join(internal.GetEnvWithFallback(ConsulConfigPathPrefixEnv, ConsulConfigDefaultPathPrefix), key),
 		})
 		if err != nil {
 			return nil, fmt.Errorf("wath.Parse %w", err)
