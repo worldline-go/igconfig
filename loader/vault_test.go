@@ -387,7 +387,7 @@ func (v VaultMock) Read(path string) (*api.Secret, error) {
 		return nil, v.err
 	}
 
-	path = strings.TrimPrefix(strings.TrimPrefix(path, VaultSecretDefaultBasePath), "/")
+	path = strings.TrimPrefix(strings.TrimPrefix(path, VaultSecretBasePath), "/")
 
 	data, ok := v.data[path]
 	if !ok {
@@ -404,7 +404,7 @@ func (v VaultMock) Read(path string) (*api.Secret, error) {
 }
 
 func (v VaultMock) List(path string) (*api.Secret, error) {
-	path = strings.TrimPrefix(strings.TrimPrefix(path, VaultSecretDefaultBasePath), "/")
+	path = strings.TrimPrefix(strings.TrimPrefix(path, VaultSecretBasePath), "/")
 
 	if keys, ok := v.list[path]; ok {
 		return &api.Secret{
@@ -448,7 +448,7 @@ func TestVault_LoginPath(t *testing.T) {
 		{
 			name:     "login_on_default_path",
 			env:      "",
-			expected: VaultAppRoleDefaultBasePath,
+			expected: VaultAppRoleBasePath,
 		},
 		{
 			name:     "login_on_custom_path",
@@ -490,7 +490,7 @@ func TestVault_SecretPath(t *testing.T) {
 	}
 	for _, scenario := range tests {
 		func() {
-			expectedBasePath := VaultSecretDefaultBasePath
+			expectedBasePath := VaultSecretBasePath
 			if scenario.basePath != "" {
 				expectedBasePath = scenario.basePath
 			}

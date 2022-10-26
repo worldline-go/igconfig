@@ -45,7 +45,7 @@ func (l Consul) DynamicValue(ctx context.Context, key string) (<-chan []byte, er
 	if l.Plan == nil {
 		plan, err := watch.Parse(map[string]interface{}{
 			"type": "key",
-			"key":  path.Join(internal.GetEnvWithFallback(ConsulConfigPathPrefixEnv, ConsulConfigDefaultPathPrefix), key),
+			"key":  path.Join(internal.GetEnvWithFallback(ConsulConfigPathPrefixEnv, ConsulConfigPathPrefix), key),
 		})
 		if err != nil {
 			return nil, fmt.Errorf("wath.Parse %w", err)
