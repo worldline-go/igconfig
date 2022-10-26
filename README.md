@@ -15,9 +15,9 @@ go get github.com/worldline-go/igconfig
 
 ## Example
 
-__cfg__ and __secret__ tag values are case insensitive and weakly dash/underscore so __Network-Name__, __network_name__ or __NeTWoK-NaMe__ are same in both tag and configs.
+**cfg** and **secret** tag values are case insensitive and weakly dash/underscore so **Network-Name**, **network_name** or **NeTWoK-NaMe** are same in both tag and configs.
 
-__NOTE__ if __secret__ tag not found it will check __cfg__ tag after that it will check variable's name.
+**NOTE** if **secret** tag not found it will check **cfg** tag after that it will check variable's name.
 
 ```go
 type Config struct {
@@ -41,14 +41,18 @@ if err := igconfig.LoadConfig("myappname", &cfg); err != nil {
 
 Also check example:  
 [Examples section](#examples)  
-[Example usage _example/readFromAll/main.go](_example/readFromAll/main.go)
+[Example usage \_example/readFromAll/main.go](_example/readFromAll/main.go)
 
 ## Description
+
 There is only a single exported function:
+
 ```go
 func LoadConfig(appName string, config interface{}) error
 ```
+
 or if specific loaders needed:
+
 ```go
 func LoadWithLoaders(appName string, configStruct interface{}, loaders ...loader.Loader) error
 ```
@@ -60,6 +64,7 @@ There are also context accepted functions `LoadConfigWithContext`, `LoadWithLoad
 - `loaders` is list of Loaders to use.
 
 ### Config struct
+
 All exported fields of this structure will be checked and filled based on their tags or field names.
 
 The field type is taken into consideration when processing parameters.
@@ -75,28 +80,34 @@ Config struct can have inner structs as a fields, but not all Loaders might supp
 For example Consul and Vault support inner structs, while Env and Flags don't.
 
 ### Tags
+
 Config structs can have special tags for fine-grained field name configuration.
 
 There are no required tags, but setting them can improve readability and understanding.
 
 #### cfg
+
 `cfg` tag is fallback tag when no Loader-specific tag can be found.
 As such defining only this tag can be enough for most situations.
 
 #### env
+
 `env` tag specifies a name of environmental variable to get value from.
 
 #### cmd
+
 `cmd` tag is used to set flag names for fields.
 
 #### secret
+
 `secret` tag specifies name of field in Vault that should be used to fill the field.  
 If not exist it use as struct's field name.
 
 #### default
+
 `default` is special tag.
 
-Unlike other tags it does not point to a place from which value should be taken, 
+Unlike other tags it does not point to a place from which value should be taken,
 but instead it itself holds value.
 
 `default:"data"` will mean that value of string field that has this tag will be `data`.
@@ -104,6 +115,7 @@ but instead it itself holds value.
 This tag is optional
 
 ## Loaders
+
 Loaders are actual specification on how fields should be filled.
 
 `igconfig` provides a simple interface for creating new loaders.
@@ -130,38 +142,42 @@ if err := igconfig.LoadWithLoaders("test", &conf, loaders...); err != nil {
 ```
 
 ### Default
+
 This loader uses `default` tag to get value for fields.
 
 ### Consul
+
 Loads configuration from Consul and uses map decoder with `cfg` tag to decode data from Consul to a struct.
 
 If not give `CONSUL_HTTP_ADDR` as environment variable, this config will skip!
 
 For connection to Consul server you need to set some of environment variables.
 
-| Envrionment variable | Meaning
-| --- | --- |
-| CONSUL_HTTP_ADDR | Ex: `consul:8500`, sets the HTTP address |
-| CONSUL_HTTP_TOKEN_FILE | sets the HTTP token file |
-| CONSUL_HTTP_TOKEN | sets the HTTP token |
-| CONSUL_HTTP_AUTH | Ex: `username:password`, sets the HTTP authentication header |
-| CONSUL_HTTP_SSL | Ex: `true`, sets whether or not to use HTTPS |
-| CONSUL_TLS_SERVER_NAME | sets the server name to use as the SNI host when connecting via TLS |
-| CONSUL_CACERT | sets the CA file to use for talking to Consul over TLS |
-| CONSUL_CAPATH | sets the path to a directory of CA certs to use for talking to Consul over TLS |
-| CONSUL_CLIENT_CERT | sets the client cert file to use for talking to Consul over TLS |
-| CONSUL_CLIENT_KEY | sets the client key file to use for talking to Consul over TLS. |
-| CONSUL_HTTP_SSL_VERIFY | Ex: `false`, sets whether or not to disable certificate checking |
-| CONSUL_NAMESPACE | sets the HTTP Namespace to be used by default. This can still be overridden |
+| Envrionment variable      | Meaning                                                                        |
+| ------------------------- | ------------------------------------------------------------------------------ |
+| CONSUL_HTTP_ADDR          | Ex: `consul:8500`, sets the HTTP address                                       |
+| CONSUL_HTTP_TOKEN_FILE    | sets the HTTP token file                                                       |
+| CONSUL_HTTP_TOKEN         | sets the HTTP token                                                            |
+| CONSUL_HTTP_AUTH          | Ex: `username:password`, sets the HTTP authentication header                   |
+| CONSUL_HTTP_SSL           | Ex: `true`, sets whether or not to use HTTPS                                   |
+| CONSUL_TLS_SERVER_NAME    | sets the server name to use as the SNI host when connecting via TLS            |
+| CONSUL_CACERT             | sets the CA file to use for talking to Consul over TLS                         |
+| CONSUL_CAPATH             | sets the path to a directory of CA certs to use for talking to Consul over TLS |
+| CONSUL_CLIENT_CERT        | sets the client cert file to use for talking to Consul over TLS                |
+| CONSUL_CLIENT_KEY         | sets the client key file to use for talking to Consul over TLS.                |
+| CONSUL_HTTP_SSL_VERIFY    | Ex: `false`, sets whether or not to disable certificate checking               |
+| CONSUL_NAMESPACE          | sets the HTTP Namespace to be used by default. This can still be overridden    |
+| CONSUL_CONFIG_PATH_PREFIX | sets the path prefix to be used by default.                                    |
 
-While it is possible to change decoder from YAML to JSON for example it is not recommended 
-if there are no objective reasons to do so. YAML is superior to JSON in terms of readability 
+While it is possible to change decoder from YAML to JSON for example it is not recommended
+if there are no objective reasons to do so. YAML is superior to JSON in terms of readability
 while providing as much ability to write configurations.
 
 For better configurability configuration struct might include `cfg` tag for fields to
 specify a proper name to bind from Consul, if this tag is skipper - lowercase field name will be used to bind.
 
 For example:
+
 ```go
 type Config struct {
     Field1 int `cfg:"field"`
@@ -170,14 +186,17 @@ type Config struct {
     }
 }
 ```
+
 will match this YAML
+
 ```yaml
 field: 50
 str:
-    inner: "test string"
+  inner: "test string"
 ```
 
 ### Vault
+
 Loads configuration from Vault and uses MapDecoder to decode data from Vault to a struct.
 
 First Vault loads in `finops/data/generic` path and after that process application's configuration in `finops/data/<appname>` path.
@@ -190,6 +209,7 @@ Default value is `[{Map: "", Name: "generic"}]`, Map is a wrapper for read value
 To read more than one path, just append your path to the loader.VaultSecretAdditionalPaths slice.
 
 Use `Map` value to wrap readed data with a key and `Name` is a path of configuration.
+
 ```go
 loader.VaultSecretAdditionalPaths = append(
     loader.VaultSecretAdditionalPaths,
@@ -201,31 +221,32 @@ If not given any of `VAULT_ADDR`, `VAULT_AGENT_ADDR` or `CONSUL_HTTP_ADDR` as en
 
 If `CONSUL_HTTP_ADDR` exists, it uses Consul to get vault address.
 
-| Envrionment Variable | Meaning
-| --- | --- |
-| CONSUL_HTTP_ADDR | get VAULT_ADDR from this consul server with vault service tag name. |
-| VAULT_CONSUL_ADDR_DISABLE | disable to get VAULT_ADDR from this consul server. |
-| VAULT_ADDR |  the address of the Vault server. This should be a complete URL such as "http://vault.example.com". If need a custom SSL cert or enable insecure mode, you need to specify a custom HttpClient. |
-| VAULT_AGENT_ADDR | the address of the local Vault agent. This should be a complete URL such as "http://vault.example.com". |
-| VAULT_MAX_RETRIES |  controls the maximum number of times to retry when a 5xx error occurs. Set to 0 to disable retrying. Defaults to 2 (for a total of three tries).  |
-| VAULT_RATE_LIMIT | EX: `rateFloat:brustInt` |
-| VAULT_CLIENT_TIMEOUT | seconds |
-| VAULT_SRV_LOOKUP | enables the client to lookup the host through DNS SRV lookup |
-| VAULT_CACERT | TLS  |
-| VAULT_CAPATH | TLS |
-| VAULT_CLIENT_CERT | TLS |
-| VAULT_CAPATH | TLS |
-| VAULT_CLIENT_CERT | TLS |
-| VAULT_CLIENT_KEY | TLS |
-| VAULT_TLS_SERVER_NAME | TLS |
-| VAULT_SKIP_VERIFY | TLS |
+| Envrionment Variable      | Meaning                                                                                                                                                                                        |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CONSUL_HTTP_ADDR          | get VAULT_ADDR from this consul server with vault service tag name.                                                                                                                            |
+| VAULT_CONSUL_ADDR_DISABLE | disable to get VAULT_ADDR from this consul server.                                                                                                                                             |
+| VAULT_ADDR                | the address of the Vault server. This should be a complete URL such as "http://vault.example.com". If need a custom SSL cert or enable insecure mode, you need to specify a custom HttpClient. |
+| VAULT_AGENT_ADDR          | the address of the local Vault agent. This should be a complete URL such as "http://vault.example.com".                                                                                        |
+| VAULT_MAX_RETRIES         | controls the maximum number of times to retry when a 5xx error occurs. Set to 0 to disable retrying. Defaults to 2 (for a total of three tries).                                               |
+| VAULT_RATE_LIMIT          | EX: `rateFloat:brustInt`                                                                                                                                                                       |
+| VAULT_CLIENT_TIMEOUT      | seconds                                                                                                                                                                                        |
+| VAULT_SRV_LOOKUP          | enables the client to lookup the host through DNS SRV lookup                                                                                                                                   |
+| VAULT_CACERT              | TLS                                                                                                                                                                                            |
+| VAULT_CAPATH              | TLS                                                                                                                                                                                            |
+| VAULT_CLIENT_CERT         | TLS                                                                                                                                                                                            |
+| VAULT_CAPATH              | TLS                                                                                                                                                                                            |
+| VAULT_CLIENT_CERT         | TLS                                                                                                                                                                                            |
+| VAULT_CLIENT_KEY          | TLS                                                                                                                                                                                            |
+| VAULT_TLS_SERVER_NAME     | TLS                                                                                                                                                                                            |
+| VAULT_SKIP_VERIFY         | TLS                                                                                                                                                                                            |
+| VAULT_APPROLE_BASE_PATH   | set login path to be used by default.                                                                                                                                                          |
+| VAULT_SECRET_BASE_PATH    | set secret base path to be used by default.                                                                                                                                                    |
 
-For authentication path is `auth/approle/login` and you should set additional envrionment values to get data.
-
-`VAULT_ROLE_ID` and `VAULT_ROLE_SECRET` environment variables.
+For authentication, you should set `VAULT_ROLE_ID` and `VAULT_ROLE_SECRET` environment variables.
 
 ### File
-TOML, YAML and JSON files supported, and file path should be located on __CONFIG_FILE__ env variable.  
+
+TOML, YAML and JSON files supported, and file path should be located on **CONFIG_FILE** env variable.  
 If that environment variable not found, file loader check working directory and `/etc` path
 with this formation `<appName>.[toml|yml|yaml|json]` (if there is more than `appName` with different suffixes, order is `toml > yml > yaml > json`).  
 The appName used as the file name is not the full name, only the part after the last slash.
@@ -237,21 +258,23 @@ identified by `cfg`.
 If a key is matched, the corresponding field in the struct will be filled with the value
 from the configuration file.
 
-__NOTE:__ if `cfg` tag not exists, it is still read values in file and match struct's field name!  
+**NOTE:** if `cfg` tag not exists, it is still read values in file and match struct's field name!  
 Don't want to read a value just delete it in your config file or add `cfg:"-"`.
 
 FileLoader editable, you can add your own decoder or new file format or order of file suffixes.
 
 ### Environment variables
+
 For all exported fields from the config struct the name and the field tag identified by "env"
 will be checked if a corresponding environment variable is present. The tag may contain
-a list of names separated by comma's. The comparison is upper-case, 
+a list of names separated by comma's. The comparison is upper-case,
 even if tag specifies lower- or mixed-case. Lower-case environment variables are ignored.
 
 Once a match is found the value from the corresponding environment variable is placed
 in the struct field, and no further comparisons will be done for that field.
 
 Set value in inner struct:
+
 ```go
 type Config struct {
     Inner Inner
@@ -273,9 +296,10 @@ type Config struct {
 
 Now value use `IN_TEST_ENV`
 
-__NOTE:__ if `env` tag not exists, it will check `cfg` tag and if both not exists, it will check struct's field name as uppercase.
+**NOTE:** if `env` tag not exists, it will check `cfg` tag and if both not exists, it will check struct's field name as uppercase.
 
 ### Flags (command-line parameters)
+
 For all exported fields from the config struct the tag of the field identified by "cmd"
 will be checked if a corresponding command-line parameter is present. The tag may contain
 a list of names separated by comma's. The comparison is always done in a case-sensitive manner.
@@ -409,6 +433,7 @@ Go to `localhost:8500` webui and add key values but for our tool folder should b
 It could be `yaml` or `json` format or you can handle by `codec.Decoder` interface.
 
 Test it
+
 ```sh
 export CONSUL_HTTP_ADDR="localhost:8500"
 go run _example/readFromAll/main.go
@@ -435,11 +460,13 @@ go run _example/dynamicConsul/main.go
 <details><summary>Package Test</summary>
 
 ## Unit tests
+
 ```sh
 go test --race -cover ./...
 ```
 
 ## Code coverage report (Browser)
+
 ```sh
 mkdir _out
 go test -cover -coverprofile cover.out -outputdir ./_out/ ./...
