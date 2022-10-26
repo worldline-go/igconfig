@@ -154,6 +154,7 @@ For connection to Consul server you need to set some of environment variables.
 | CONSUL_HTTP_SSL_VERIFY | Ex: `false`, sets whether or not to disable certificate checking               |
 | CONSUL_NAMESPACE | sets the HTTP Namespace to be used by default. This can still be overridden    |
 | CONSUL_CONFIG_PATH_PREFIX | sets the path prefix to be used by default.                                    |
+
 While it is possible to change decoder from YAML to JSON for example it is not recommended 
 if there are no objective reasons to do so. YAML is superior to JSON in terms of readability 
 while providing as much ability to write configurations.
