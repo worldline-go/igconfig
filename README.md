@@ -139,21 +139,21 @@ If not give `CONSUL_HTTP_ADDR` as environment variable, this config will skip!
 
 For connection to Consul server you need to set some of environment variables.
 
-| Envrionment variable | Meaning
-| --- | --- |
-| CONSUL_HTTP_ADDR | Ex: `consul:8500`, sets the HTTP address |
-| CONSUL_HTTP_TOKEN_FILE | sets the HTTP token file |
-| CONSUL_HTTP_TOKEN | sets the HTTP token |
-| CONSUL_HTTP_AUTH | Ex: `username:password`, sets the HTTP authentication header |
-| CONSUL_HTTP_SSL | Ex: `true`, sets whether or not to use HTTPS |
-| CONSUL_TLS_SERVER_NAME | sets the server name to use as the SNI host when connecting via TLS |
-| CONSUL_CACERT | sets the CA file to use for talking to Consul over TLS |
+| Envrionment variable | Meaning                                                                        
+| --- |--------------------------------------------------------------------------------|
+| CONSUL_HTTP_ADDR | Ex: `consul:8500`, sets the HTTP address                                       |
+| CONSUL_HTTP_TOKEN_FILE | sets the HTTP token file                                                       |
+| CONSUL_HTTP_TOKEN | sets the HTTP token                                                            |
+| CONSUL_HTTP_AUTH | Ex: `username:password`, sets the HTTP authentication header                   |
+| CONSUL_HTTP_SSL | Ex: `true`, sets whether or not to use HTTPS                                   |
+| CONSUL_TLS_SERVER_NAME | sets the server name to use as the SNI host when connecting via TLS            |
+| CONSUL_CACERT | sets the CA file to use for talking to Consul over TLS                         |
 | CONSUL_CAPATH | sets the path to a directory of CA certs to use for talking to Consul over TLS |
-| CONSUL_CLIENT_CERT | sets the client cert file to use for talking to Consul over TLS |
-| CONSUL_CLIENT_KEY | sets the client key file to use for talking to Consul over TLS. |
-| CONSUL_HTTP_SSL_VERIFY | Ex: `false`, sets whether or not to disable certificate checking |
-| CONSUL_NAMESPACE | sets the HTTP Namespace to be used by default. This can still be overridden |
-
+| CONSUL_CLIENT_CERT | sets the client cert file to use for talking to Consul over TLS                |
+| CONSUL_CLIENT_KEY | sets the client key file to use for talking to Consul over TLS.                |
+| CONSUL_HTTP_SSL_VERIFY | Ex: `false`, sets whether or not to disable certificate checking               |
+| CONSUL_NAMESPACE | sets the HTTP Namespace to be used by default. This can still be overridden    |
+| CONSUL_CONFIG_PATH_PREFIX | sets the path prefix to be used by default.                                    |
 While it is possible to change decoder from YAML to JSON for example it is not recommended 
 if there are no objective reasons to do so. YAML is superior to JSON in terms of readability 
 while providing as much ability to write configurations.
@@ -201,28 +201,28 @@ If not given any of `VAULT_ADDR`, `VAULT_AGENT_ADDR` or `CONSUL_HTTP_ADDR` as en
 
 If `CONSUL_HTTP_ADDR` exists, it uses Consul to get vault address.
 
-| Envrionment Variable | Meaning
-| --- | --- |
-| CONSUL_HTTP_ADDR | get VAULT_ADDR from this consul server with vault service tag name. |
-| VAULT_CONSUL_ADDR_DISABLE | disable to get VAULT_ADDR from this consul server. |
-| VAULT_ADDR |  the address of the Vault server. This should be a complete URL such as "http://vault.example.com". If need a custom SSL cert or enable insecure mode, you need to specify a custom HttpClient. |
-| VAULT_AGENT_ADDR | the address of the local Vault agent. This should be a complete URL such as "http://vault.example.com". |
-| VAULT_MAX_RETRIES |  controls the maximum number of times to retry when a 5xx error occurs. Set to 0 to disable retrying. Defaults to 2 (for a total of three tries).  |
-| VAULT_RATE_LIMIT | EX: `rateFloat:brustInt` |
-| VAULT_CLIENT_TIMEOUT | seconds |
-| VAULT_SRV_LOOKUP | enables the client to lookup the host through DNS SRV lookup |
-| VAULT_CACERT | TLS  |
-| VAULT_CAPATH | TLS |
-| VAULT_CLIENT_CERT | TLS |
-| VAULT_CAPATH | TLS |
-| VAULT_CLIENT_CERT | TLS |
-| VAULT_CLIENT_KEY | TLS |
-| VAULT_TLS_SERVER_NAME | TLS |
-| VAULT_SKIP_VERIFY | TLS |
+| Envrionment Variable | Meaning                                                                                                                                                                                        
+| --- |------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| CONSUL_HTTP_ADDR | get VAULT_ADDR from this consul server with vault service tag name.                                                                                                                            |
+| VAULT_CONSUL_ADDR_DISABLE | disable to get VAULT_ADDR from this consul server.                                                                                                                                             |
+| VAULT_ADDR | the address of the Vault server. This should be a complete URL such as "http://vault.example.com". If need a custom SSL cert or enable insecure mode, you need to specify a custom HttpClient. |
+| VAULT_AGENT_ADDR | the address of the local Vault agent. This should be a complete URL such as "http://vault.example.com".                                                                                        |
+| VAULT_MAX_RETRIES | controls the maximum number of times to retry when a 5xx error occurs. Set to 0 to disable retrying. Defaults to 2 (for a total of three tries).                                               |
+| VAULT_RATE_LIMIT | EX: `rateFloat:brustInt`                                                                                                                                                                       |
+| VAULT_CLIENT_TIMEOUT | seconds                                                                                                                                                                                        |
+| VAULT_SRV_LOOKUP | enables the client to lookup the host through DNS SRV lookup                                                                                                                                   |
+| VAULT_CACERT | TLS                                                                                                                                                                                            |
+| VAULT_CAPATH | TLS                                                                                                                                                                                            |
+| VAULT_CLIENT_CERT | TLS                                                                                                                                                                                            |
+| VAULT_CAPATH | TLS                                                                                                                                                                                            |
+| VAULT_CLIENT_CERT | TLS                                                                                                                                                                                            |
+| VAULT_CLIENT_KEY | TLS                                                                                                                                                                                            |
+| VAULT_TLS_SERVER_NAME | TLS                                                                                                                                                                                            |
+| VAULT_SKIP_VERIFY | TLS                                                                                                                                                                                            |
+| VAULT_APPROLE_BASE_PATH | set login path to be used by default.                                                                                                                                                          |
+| VAULT_SECRET_BASE_PATH | set secret base path to be used by default.                                                                                                                                                    |
 
-For authentication path is `auth/approle/login` and you should set additional envrionment values to get data.
-
-`VAULT_ROLE_ID` and `VAULT_ROLE_SECRET` environment variables.
+For authentication, you should set `VAULT_ROLE_ID` and `VAULT_ROLE_SECRET` environment variables.
 
 ### File
 TOML, YAML and JSON files supported, and file path should be located on __CONFIG_FILE__ env variable.  
