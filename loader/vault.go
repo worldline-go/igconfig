@@ -26,9 +26,6 @@ type AdditionalPath struct {
 	Name string
 }
 
-// VaultSecretTag is the tag used to identify Vault secrets.
-var VaultSecretTag = "secret"
-
 // VaultRoleIDEnv specifies the name of environment a variable that holds Vault role id to authenticate with.
 const VaultRoleIDEnv = "VAULT_ROLE_ID"
 
@@ -41,12 +38,14 @@ const VaultAppRoleBasePathEnv = "VAULT_APPROLE_BASE_PATH"
 // VaultSecretBasePathEnv specifies the name of the environment variable that holds the base path to secrets.
 const VaultSecretBasePathEnv = "VAULT_SECRET_BASE_PATH"
 
-// VaultSecretDefaultBasePath is the base path for secrets.
-const VaultSecretDefaultBasePath = "finops"
+// VaultAppRoleBasePath is the default base path for app role authentication.
+var VaultAppRoleBasePath = "auth/approle/login"
 
-// VaultAppRoleDefaultBasePath is the default base path for
-// app role authentication.
-const VaultAppRoleDefaultBasePath = "auth/approle/login"
+// VaultSecretTag is the tag used to identify Vault secrets.
+var VaultSecretTag = "secret"
+
+// VaultSecretBasePath is the base path for secrets.
+var VaultSecretBasePath = "finops"
 
 // VaultSecretAdditionalPaths is usable for additional secrets to load.
 // Such generic secrets might be re-used by any number of applications.
@@ -222,7 +221,7 @@ func SetToken(token string) AuthOption {
 // for this the secret id can be passed as blank.
 func SetAppRole(role, secret string) AuthOption {
 	return func(c *api.Client) error {
-		path := internal.GetEnvWithFallback(VaultAppRoleBasePathEnv, VaultAppRoleDefaultBasePath)
+		path := internal.GetEnvWithFallback(VaultAppRoleBasePathEnv, VaultAppRoleBasePath)
 		resp, err := c.Logical().Write(path, map[string]interface{}{
 			"role_id":   role,
 			"secret_id": secret,
@@ -322,7 +321,7 @@ func (l *Vault) loadSecretData(ctx context.Context, appName string, errCheck boo
 }
 
 func (l *Vault) list(ctx context.Context, appName string) (map[string]interface{}, error) {
-	secretBasePath := internal.GetEnvWithFallback(VaultSecretBasePathEnv, VaultSecretDefaultBasePath)
+	secretBasePath := internal.GetEnvWithFallback(VaultSecretBasePathEnv, VaultSecretBasePath)
 	appNameMeta := path.Join(secretBasePath, "metadata", appName)
 
 	pathSecret, _ := l.Client.List(appNameMeta)
@@ -352,7 +351,7 @@ func (l *Vault) list(ctx context.Context, appName string) (map[string]interface{
 }
 
 func (l *Vault) read(ctx context.Context, appName string, errCheck bool) (map[string]interface{}, error) {
-	secretBasePath := internal.GetEnvWithFallback(VaultSecretBasePathEnv, VaultSecretDefaultBasePath)
+	secretBasePath := internal.GetEnvWithFallback(VaultSecretBasePathEnv, VaultSecretBasePath)
 	appNameData := path.Join(secretBasePath, "data", appName)
 
 	pathSecret, err := l.Client.Read(appNameData)

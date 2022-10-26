@@ -131,7 +131,7 @@ func TestConsul_PathPrefix(t *testing.T) {
 	}
 	for _, scenario := range tests {
 		func() {
-			expectedBasePath := ConsulConfigDefaultPathPrefix
+			expectedBasePath := ConsulConfigPathPrefix
 			if scenario.pathPrefix != "" {
 				expectedBasePath = scenario.pathPrefix
 			}
@@ -199,7 +199,7 @@ func (m *ConsulMock) RoundTrip(request *http.Request) (*http.Response, error) {
 	switch {
 	case strings.HasPrefix(reqURI, "/v1/kv/"):
 		key := strings.TrimPrefix(reqURI, path.Join("/v1/kv",
-			internal.GetEnvWithFallback(ConsulConfigPathPrefixEnv, ConsulConfigDefaultPathPrefix))+"/")
+			internal.GetEnvWithFallback(ConsulConfigPathPrefixEnv, ConsulConfigPathPrefix))+"/")
 
 		kvResp, meta, err := m.Get(key, nil)
 
