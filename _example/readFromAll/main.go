@@ -20,8 +20,8 @@ type Config struct {
 	DBDataSource string `cfg:"dbDataSource" env:"DBDATASOURCE" secret:"dbDataSource"      loggable:"true"`
 	DBType       string `cfg:"dbType"       env:"DBTYPE"       secret:"dbType,loggable"   default:"pgx" loggable:"false"`
 
-	SuperSecret SuperSecret `cfg:"super_secret"`
-	Test        string      `cfg:"test-value"`
+	SuperSecret SuperSecret   `cfg:"super_secret"`
+	Test        time.Duration `cfg:"test-value" default:"10s"`
 
 	// generic vault secrets
 	Keycloack Keycloack
@@ -87,5 +87,5 @@ func main() {
 	log.Ctx(ctx).Info().
 		EmbedObject(igconfig.Printer{Value: conf}).Msg("loaded config")
 
-	log.Ctx(ctx).Info().Msg(conf.Test)
+	log.Ctx(ctx).Info().Msg(conf.Test.String())
 }

@@ -1,4 +1,0 @@
-include:
-  - project: 'FinOps/devops/cicd/runner'
-    ref: master
-    file: 'finops_tester_ci.yml'

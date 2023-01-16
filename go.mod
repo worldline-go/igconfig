@@ -9,7 +9,7 @@ require (
 	github.com/hashicorp/vault/api v1.1.0
 	github.com/rs/zerolog v1.26.0
 	github.com/stretchr/testify v1.7.0
-	github.com/worldline-go/reformat v1.1.0
+	github.com/worldline-go/struct2 v1.2.2
 	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 )
 
