@@ -21,9 +21,13 @@ import (
 // AdditionalPath is used to add additional path to the Vault path.
 type AdditionalPath struct {
 	// Map to wrap values to a new map with this key.
+	// It could be / seperated to create a nested map [e.g. "foo/bar"].
 	Map string
 	// Name to get that value.
 	Name string
+	// InnerPath to get that value [e.g. "foo/bar"].
+	// If not found then it return empty map.
+	InnerPath string
 }
 
 // VaultRoleIDEnv specifies the name of environment a variable that holds Vault role id to authenticate with.
@@ -266,10 +270,36 @@ func (l *Vault) LoadFromReformat(ctx context.Context, paths []AdditionalPath, to
 			return err
 		}
 
-		if path.Map != "" {
-			secretMap = map[string]interface{}{
-				path.Map: secretMap,
+		if path.InnerPath != "" {
+			maps := strings.Split(path.InnerPath, "/")
+
+			for _, m := range maps {
+				var ok bool
+				secretMap, ok = secretMap[m].(map[string]interface{})
+				if !ok {
+					log.Ctx(ctx).Warn().Str("key", m).Msg("can't find key in secret data, leaving empty")
+
+					break
+				}
 			}
+		}
+
+		if path.Map != "" {
+			maps := strings.Split(path.Map, "/")
+
+			mapDef := map[string]interface{}{}
+			mapRange := mapDef
+			for _, m := range maps {
+				if m == maps[len(maps)-1] {
+					mapRange[m] = secretMap
+					break
+				}
+
+				mapRange[m] = map[string]interface{}{}
+				mapRange = mapRange[m].(map[string]interface{})
+			}
+
+			secretMap = mapDef
 		}
 
 		if err := codec.MapDecoder(secretMap, to, VaultSecretTag); err != nil {

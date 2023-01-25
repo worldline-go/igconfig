@@ -1,8 +1,4 @@
-*.pub
-*.lock
-vendor/
-cover.out
-/_out/
-.idea
+/bin
 
-/go.work
+/coverage.*
+/go.work*

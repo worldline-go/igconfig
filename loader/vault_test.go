@@ -163,6 +163,19 @@ func TestVault_LoadGeneric(t *testing.T) {
 }
 
 func TestVault_LoadAdditional(t *testing.T) {
+	type test struct {
+		Field1   string `cfg:"field_1"`
+		Field2   string `cfg:"field_2"`
+		Untagged int64
+		Settings string `cfg:"settings"`
+		Inner    inner  `cfg:"other"`
+		Collapse struct {
+			Field struct {
+				Field2 string `cfg:"field_2"`
+			} `cfg:"field"`
+		} `cfg:"collapse"`
+	}
+
 	secrets := map[string]interface{}{
 		"other": map[string]interface{}{
 			"field_2": "other",
@@ -174,10 +187,24 @@ func TestVault_LoadAdditional(t *testing.T) {
 		"field_1": "one",
 	}
 
+	secretAdditional2 := map[string]interface{}{
+		"field_2": "two",
+	}
+
+	secretAdditional3 := map[string]interface{}{
+		"collapse": map[string]interface{}{
+			"field": map[string]interface{}{
+				"settings": "two",
+			},
+		},
+	}
+
 	mock := VaultMock{
 		data: map[string]interface{}{
-			"data/generic":    secrets,
-			"data/additional": secretAdditional,
+			"data/generic":     secrets,
+			"data/additional":  secretAdditional,
+			"data/additional2": secretAdditional2,
+			"data/additional3": secretAdditional3,
 		},
 	}
 
@@ -188,20 +215,34 @@ func TestVault_LoadAdditional(t *testing.T) {
 
 	VaultSecretAdditionalPaths = append(VaultSecretAdditionalPaths,
 		AdditionalPath{Map: "", Name: "additional"},
+		AdditionalPath{Map: "collapse/field", Name: "additional2"},
+		AdditionalPath{Map: "", Name: "additional3", InnerPath: "collapse/field"},
 	)
 
 	v := Vault{
 		Client: mock,
 	}
 
-	var s testStruct
+	var s test
 
 	assert.NoError(t, v.LoadGeneric(context.Background(), &s))
-	assert.Equal(t, testStruct{
+	assert.Equal(t, test{
 		Field1:   "one",
 		Untagged: 54,
 		Inner: inner{
 			Field2: "other",
+		},
+		Settings: "two",
+		Collapse: struct {
+			Field struct {
+				Field2 string `cfg:"field_2"`
+			} `cfg:"field"`
+		}{
+			Field: struct {
+				Field2 string `cfg:"field_2"`
+			}{
+				Field2: "two",
+			},
 		},
 	}, s)
 }

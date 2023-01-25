@@ -1,7 +1,7 @@
 # igconfig
 
 [![Codecov](https://img.shields.io/codecov/c/github/worldline-go/igconfig?logo=codecov&style=flat-square)](https://app.codecov.io/gh/worldline-go/igconfig)
-[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/worldline-go/igconfig/test.yml?branch=main&logo=github&style=flat-square&label=ci))](https://github.com/worldline-go/igconfig/actions)
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/worldline-go/igconfig/test.yml?branch=main&logo=github&style=flat-square&label=ci)](https://github.com/worldline-go/igconfig/actions)
 [![Go Reference](https://pkg.go.dev/badge/github.com/worldline-go/igconfig.svg)](https://pkg.go.dev/github.com/worldline-go/igconfig)
 
 This package can be used to load configuration values from a configuration file,
