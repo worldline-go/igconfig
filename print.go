@@ -86,8 +86,6 @@ func (p Printer) MarshalZerologObject(ev *zerolog.Event) {
 
 		secretValues, isSecret := f.Tag.Lookup(SecretTagName)
 
-		fmt.Println(secretValues, isSecret, loggable)
-
 		// If the tag could potentially be a secret you need to
 		// explicitly state that you want to log it
 		// else the default is not log it.
