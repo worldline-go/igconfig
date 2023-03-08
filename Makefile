@@ -5,7 +5,7 @@ LOCAL_BIN_DIR := $(PWD)/bin
 
 ## golangci configuration
 GOLANGCI_CONFIG_URL   := https://raw.githubusercontent.com/worldline-go/guide/main/lint/.golangci.yml
-GOLANGCI_LINT_VERSION := v1.50.0
+GOLANGCI_LINT_VERSION := v1.51.2
 
 .DEFAULT_GOAL := help
 

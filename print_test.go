@@ -18,13 +18,13 @@ type small struct {
 	unexported         string
 	timeField          time.Time //nolint:unused
 	Zerolog            *zerologMarshaler
-	NonPrintable       string `loggable:"false"`
+	NonPrintable       string `log:"false"`
 	NonPrintableSecret string `secret:"i_like_turtles"`
 }
 
 type Secret struct {
 	NonPrintableSecret string `secret:"i_like_turtles"`
-	PrintableSecret    string `secret:"i_like_turtles" loggable:"true"`
+	PrintableSecret    string `secret:"i_like_turtles" log:"true"`
 }
 
 type withTimeFields struct {

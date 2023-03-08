@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/rs/zerolog"
@@ -12,9 +13,9 @@ import (
 
 var _ zerolog.LogObjectMarshaler = Printer{}
 
-const (
-	// LoggableTagOptionName is a tag name for loggable boolean check.
-	LoggableTagOptionName = "loggable"
+var (
+	// LogTagOptionNames is a tag name for loggable boolean check.
+	LogTagOptionNames = []string{"loggable", "log"}
 	// SecretTagName is a tag name for secret loaders to prevent print it.
 	SecretTagName = "secret"
 )
@@ -68,22 +69,37 @@ func (p Printer) MarshalZerologObject(ev *zerolog.Event) {
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
 
-		loggableValue, ok := f.Tag.Lookup(LoggableTagOptionName)
+		var logValue string
+		var ok bool
+		for _, tag := range LogTagOptionNames {
+			logValue, ok = f.Tag.Lookup(tag)
+			if ok {
+				break
+			}
+		}
 
-		loggable := loggableValue == "true"
+		loggable, _ := strconv.ParseBool(logValue)
 
-		// Currently only 'true' is supported as value for LoggableTag
 		if ok && !loggable {
 			continue
 		}
 
 		secretValues, isSecret := f.Tag.Lookup(SecretTagName)
 
+		fmt.Println(secretValues, isSecret, loggable)
+
 		// If the tag could potentially be a secret you need to
 		// explicitly state that you want to log it
 		// else the default is not log it.
 		if isSecret && !loggable {
-			if !isInTagOption(secretValues, LoggableTagOptionName) {
+			skipThisField := false
+			for _, logValue := range LogTagOptionNames {
+				if !isInTagOption(secretValues, logValue) {
+					skipThisField = true
+				}
+			}
+
+			if skipThisField {
 				continue
 			}
 		}

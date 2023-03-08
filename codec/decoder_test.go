@@ -269,7 +269,8 @@ func TestMapDecoder(t *testing.T) {
 		NoSet    string `secret:"-"`
 		NoData   string `secret:"missing"`
 		Time     time.Time
-		Inner    inner `secret:"other"`
+		Duration time.Duration `cfg:"duration"`
+		Inner    inner         `secret:"other"`
 	}
 
 	type innerDef struct {
@@ -309,6 +310,7 @@ func TestMapDecoder(t *testing.T) {
 						"field_2": "other",
 					},
 					"untagged": 54,
+					"duration": "2m",
 				},
 				output: &testStruct{},
 				tag:    "secret",
@@ -322,6 +324,7 @@ func TestMapDecoder(t *testing.T) {
 				Inner: inner{
 					Field2: "other",
 				},
+				Duration: 2 * time.Minute,
 			},
 		},
 		{

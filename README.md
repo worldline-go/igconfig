@@ -1,7 +1,7 @@
 # igconfig
 
 [![Codecov](https://img.shields.io/codecov/c/github/worldline-go/igconfig?logo=codecov&style=flat-square)](https://app.codecov.io/gh/worldline-go/igconfig)
-[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/worldline-go/igconfig/test.yml?branch=main&logo=github&style=flat-square&label=ci)](https://github.com/worldline-go/igconfig/actions)
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/worldline-go/igconfig/test.yml?branch=master&logo=github&style=flat-square&label=ci)](https://github.com/worldline-go/igconfig/actions)
 [![Go Reference](https://pkg.go.dev/badge/github.com/worldline-go/igconfig.svg)](https://pkg.go.dev/github.com/worldline-go/igconfig)
 
 This package can be used to load configuration values from a configuration file,
@@ -15,19 +15,19 @@ go get github.com/worldline-go/igconfig
 
 ## Example
 
-**cfg** and **secret** tag values are case insensitive and weakly dash/underscore so **Network-Name**, **network_name**, **NeTWoK-NaMe** and **NeTWoKNaMe** are same in both tag and configs.
+**cfg** tag value are case insensitive and weakly dash/underscore so **Network-Name**, **network_name**, **NeTWoK-NaMe** and **NeTWoKNaMe** are same in both tag and configs.
 
 **NOTE** if **secret** tag not found it will check **cfg** tag after that it will check variable's name.
 
 ```go
 type Config struct {
-	NetworkName string `cfg:"networkName" env:"NETWORK_NAME" secret:"networkName"`
+	NetworkName string `cfg:"networkName" env:"NETWORK_NAME"`
 	// application specific vault
-	DBSchema     string `cfg:"dbSchema"     env:"SCHEMA"       secret:"dbSchema,loggable" default:"transaction"`
-	DBDataSource string `cfg:"dbDataSource" env:"DBDATASOURCE" loggable:"false"`
+	DBSchema     string `cfg:"dbSchema"     env:"SCHEMA"       default:"transaction"`
+	DBDataSource string `cfg:"dbDataSource" env:"DBDATASOURCE" log:"false"`
 	DBType       string `cfg:"dbType"       env:"DBTYPE"       default:"pgx"`
 
-	CustomConfig map[string]interface{} `cfg:"customConfig" secret:"customConfig,loggable"`
+	CustomConfig map[string]interface{} `cfg:"customConfig"`
 }
 
 // ---
@@ -327,16 +327,16 @@ if err := igconfig.LoadConfigWithContext(logCtx, "test", &conf); err != nil {
 
 ## Print configuration
 
-`secret` tag is disabled to print but if you want to print it add aditional option to secret called `loggable`.
+`secret` tag is disabled to print but if you want to print it add aditional option to secret called `loggable` or `log`.
 
 ```go
-Info string     `cfg:"info" secret:"info,loggable"` // Set secret's loggable option
+Info string     `cfg:"info" secret:"info,log"` // Set secret's log option
 ```
 
-Or you can set general loggable to manage it all tags in releated field.
+Or you can set general log to manage it all tags in releated field.
 
 ```go
-User string     `cfg:"user" secret:"user" loggable:"true"` // Set general loggable
+User string     `cfg:"user" secret:"user" log:"true"` // Set general log
 ```
 
 ```go
