@@ -90,14 +90,14 @@ func (p Printer) MarshalZerologObject(ev *zerolog.Event) {
 		// explicitly state that you want to log it
 		// else the default is not log it.
 		if isSecret && !loggable {
-			skipThisField := false
+			secretField := true
 			for _, logValue := range LogTagOptionNames {
-				if !isInTagOption(secretValues, logValue) {
-					skipThisField = true
+				if isInTagOption(secretValues, logValue) {
+					secretField = false
 				}
 			}
 
-			if skipThisField {
+			if secretField {
 				continue
 			}
 		}
