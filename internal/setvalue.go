@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/xhit/go-str2duration/v2"
 )
 
 //nolint:golint
@@ -28,7 +30,7 @@ var typeMap = map[reflect.Type]TypeSetter{
 		return nil
 	},
 	reflect.TypeOf(time.Duration(0)): func(input string, val reflect.Value) error {
-		d, err := time.ParseDuration(input)
+		d, err := str2duration.ParseDuration(input)
 		if err != nil {
 			return err
 		}

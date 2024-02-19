@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/worldline-go/struct2"
+	"github.com/xhit/go-str2duration/v2"
 )
 
 // BackupTagName is the tag name used if tagname not found in the struct tags.
@@ -27,7 +28,7 @@ var (
 
 			switch t1.Kind() {
 			case reflect.String:
-				return time.ParseDuration(data.(string))
+				return str2duration.ParseDuration(data.(string))
 			case reflect.Int:
 				return time.Duration(data.(int)), nil
 			case reflect.Int64:

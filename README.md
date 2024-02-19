@@ -412,7 +412,7 @@ After that add our data in your `finops` kv section. Under usually should be a `
 (
 export VAULT_ADDR="http://localhost:8200"
 export VAULT_ROLE_ID=${ROLE_ID}
-# export CONSUL_HTTP_ADDR="am2vm2042.test.igdcs.com:8500"
+# export CONSUL_HTTP_ADDR="consul:8500"
 export MIGRATIONS_TEST_ENV="testing_testing_1234"
 go run _example/readFromAll/main.go
 )

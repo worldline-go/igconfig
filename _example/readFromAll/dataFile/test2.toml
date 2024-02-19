@@ -1,11 +1,11 @@
-appPort = 8080
-test_value = "testing"
+app_port = 8080
+# test_value = "testing"
 
 [migrations]
-dbdatasource = "postgres://secret@10.63.80.75:5433/boteu1"
+dbdatasource = "postgres://secret@postgres:5432/db"
 
 [keycloack]
-ssobaseurl = "http://keycloak.test.igdcs.com/"
+ssobaseurl = "http://keycloak.test.com/"
 ssopubkeyid = "keyid1234"
 ssorealm = "finops"
 

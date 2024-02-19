@@ -1,9 +1,9 @@
 appPort: 8080
-testValue: "5s"
+testValue: "3d"
 migrations:
-  dbdatasource: postgres://secret@10.63.80.75:5433/boteu1
+  dbdatasource: postgres://secret@postgres:5432/db
 keycloack:
-  ssoBaseUrl: http://keycloak.test.igdcs.com/
+  ssoBaseUrl: http://keycloak.test.com/
   ssopubkeyid: keyid1234
   sso_realm: finops
 super-secret:

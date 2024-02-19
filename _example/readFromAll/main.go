@@ -14,14 +14,14 @@ import (
 
 // Config struct detailing all project parameters.
 type Config struct {
-	AppPort int `cfg:"appPort" env:"PORT" cmd:"port,p" default:"9057"`
+	AppPort int `cfg:"appport" default:"9057"`
 	// application specific vault
 	DBSchema     string `cfg:"dbSchema"     env:"DBSCHEMA"     secret:"dbSchema,loggable" default:"transaction"`
 	DBDataSource string `cfg:"dbDataSource" env:"DBDATASOURCE" secret:"dbDataSource"      loggable:"true"`
 	DBType       string `cfg:"dbType"       env:"DBTYPE"       secret:"dbType,loggable"   default:"pgx" loggable:"false"`
 
 	SuperSecret SuperSecret   `cfg:"super_secret"`
-	Test        time.Duration `cfg:"test-value" default:"10s"`
+	Test        time.Duration `cfg:"test-value" default:"2d"`
 
 	// generic vault secrets
 	Keycloack Keycloack

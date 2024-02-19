@@ -330,6 +330,19 @@ func TestMapDecoder(t *testing.T) {
 		{
 			args: args{
 				input: &map[string]interface{}{
+					"duration": "1w2d",
+				},
+				output: &testStruct{},
+				tag:    "secret",
+			},
+			wantErr: false,
+			want: &testStruct{
+				Duration: 9 * 24 * time.Hour,
+			},
+		},
+		{
+			args: args{
+				input: &map[string]interface{}{
 					"field_1":  "one",
 					"value":    64,
 					"valueInt": 64,
