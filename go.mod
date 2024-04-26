@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/BurntSushi/toml v1.2.1
 	github.com/hashicorp/consul/api v1.18.0
-	github.com/hashicorp/go-hclog v1.4.0
+	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/vault/api v1.8.3
 	github.com/rs/zerolog v1.28.0
 	github.com/stretchr/testify v1.8.1
