@@ -3,7 +3,7 @@ module github.com/worldline-go/igconfig
 go 1.18
 
 require (
-	github.com/BurntSushi/toml v1.2.1
+	github.com/BurntSushi/toml v1.3.2
 	github.com/hashicorp/consul/api v1.28.2
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/vault/api v1.8.3
