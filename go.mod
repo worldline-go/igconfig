@@ -7,7 +7,7 @@ require (
 	github.com/hashicorp/consul/api v1.28.2
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/vault/api v1.13.0
-	github.com/rs/zerolog v1.32.0
+	github.com/rs/zerolog v1.33.0
 	github.com/stretchr/testify v1.9.0
 	github.com/worldline-go/struct2 v1.3.0
 	github.com/xhit/go-str2duration/v2 v2.1.0
