@@ -1,8 +1,11 @@
 # igconfig
 
-[![Codecov](https://img.shields.io/codecov/c/github/worldline-go/igconfig?logo=codecov&style=flat-square)](https://app.codecov.io/gh/worldline-go/igconfig)
-[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/worldline-go/igconfig/test.yml?branch=master&logo=github&style=flat-square&label=ci)](https://github.com/worldline-go/igconfig/actions)
-[![Go Reference](https://pkg.go.dev/badge/github.com/worldline-go/igconfig.svg)](https://pkg.go.dev/github.com/worldline-go/igconfig)
+[![License](https://img.shields.io/github/license/worldline-go/igconfig?color=red&style=flat-square)](https://raw.githubusercontent.com/worldline-go/igconfig/main/LICENSE)
+[![Coverage](https://img.shields.io/sonar/coverage/worldline-go_igconfig?logo=sonarcloud&server=https%3A%2F%2Fsonarcloud.io&style=flat-square)](https://sonarcloud.io/summary/overall?id=worldline-go_igconfig)
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/worldline-go/igconfig/test.yml?branch=main&logo=github&style=flat-square&label=ci)](https://github.com/worldline-go/igconfig/actions)
+[![Go Report Card](https://goreportcard.com/badge/github.com/worldline-go/igconfig?style=flat-square)](https://goreportcard.com/report/github.com/worldline-go/igconfig)
+[![Go PKG](https://raw.githubusercontent.com/worldline-go/guide/main/badge/custom/reference.svg)](https://pkg.go.dev/github.com/worldline-go/igconfig)
+
 
 This package can be used to load configuration values from a configuration file,
 environment variables, Consul, Vault and/or command-line parameters.
