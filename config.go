@@ -18,7 +18,6 @@ var DefaultLoaders = []loader.Loader{
 	&loader.Vault{},
 	&loader.File{},
 	&loader.Env{},
-	&loader.Flags{},
 }
 
 // LoadConfig loads a configuration struct from loaders.
