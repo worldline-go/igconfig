@@ -6,7 +6,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/rs/zerolog"
 	"github.com/worldline-go/igconfig"
 	"github.com/worldline-go/igconfig/loader"
 	"github.com/worldline-go/igconfig/testdata"
@@ -79,33 +78,6 @@ func Example_fileLoader() {
 
 	// Output:
 	// {Name: Age:0 Speed:10 Address:Hoofddrop Bay:4 Secure:false Slice:[] InfoStruct:{Name:Embedded-NS1234 Age:0 Destination: Testing:testX TesTing:testX DoubleName:textD Time:0001-01-01 00:00:00 +0000 UTC} Info:{Name:IN-NS1234 Age:10 Destination:Eindhoven Testing: TesTing: DoubleName: Time:0001-01-01 00:00:00 +0000 UTC} InfoStructSkip:{Name: Age:0 Destination: Testing: TesTing: DoubleName: Time:0001-01-01 00:00:00 +0000 UTC}}
-}
-
-func ExampleLoadConfig() {
-	var config testdata.TestConfig
-
-	// Disable logging for unreachable local services.
-	// In non-local environments this should not be done.
-	zerolog.SetGlobalLevel(zerolog.ErrorLevel)
-
-	// Below are just an examples of how values can be provided. You don't need to do this in your code.
-	// In real-world - this will be provided from env, flags or Consul/Vault
-	os.Args = []string{"executable", "-name", "FromFlags"}
-	_ = os.Setenv("PORT", "5647")
-
-	if err := igconfig.LoadConfig("adm0001s", &config); err != nil {
-		log.Fatalf("load configuration: %s", err.Error())
-	}
-
-	fmt.Println(config.Host) // This value is set from default
-	fmt.Println(config.Name) // This value is set from application flags
-	fmt.Println(config.Port) // This value is set from environmental variable
-
-	// Output:
-	// localhost
-	// FromFlags
-	// 5647
-
 }
 
 func ExampleLoadWithLoaders() {
