@@ -52,7 +52,7 @@ func LoadWithLoadersWithContext(ctx context.Context, appName string, configStruc
 		}
 
 		if errors.Is(err, loader.ErrNoClient) {
-			log.Ctx(ctx).Warn().
+			log.Ctx(ctx).Debug().
 				Str("loader", fmt.Sprintf("%T", configLoader)).
 				Msgf("%v, skipping", err)
 
@@ -60,7 +60,7 @@ func LoadWithLoadersWithContext(ctx context.Context, appName string, configStruc
 		}
 
 		if internal.IsLocalNetworkError(err) {
-			log.Ctx(ctx).Warn().
+			log.Ctx(ctx).Debug().
 				Str("loader", fmt.Sprintf("%T", configLoader)).
 				Msg("local server is not available, skipping")
 
@@ -68,7 +68,7 @@ func LoadWithLoadersWithContext(ctx context.Context, appName string, configStruc
 		}
 
 		if errors.Is(err, loader.ErrNoConfFile) {
-			log.Ctx(ctx).Warn().
+			log.Ctx(ctx).Debug().
 				Str("loader", fmt.Sprintf("%T", configLoader)).
 				Msgf("%v, skipping", err)
 
