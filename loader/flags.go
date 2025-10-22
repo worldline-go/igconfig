@@ -50,7 +50,7 @@ type Flags struct {
 // LoadWithContext loads config values from the command line with context.
 // Context value not used in this loader.
 func (l Flags) LoadWithContext(_ context.Context, _ string, to interface{}) error {
-	if l.Args == nil {
+	if l.Args == nil && len(os.Args) >= 1 {
 		l.Args = os.Args[1:]
 	}
 
