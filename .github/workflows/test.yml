@@ -21,6 +21,7 @@ jobs:
     - name: golangci-lint general
       uses: golangci/golangci-lint-action@v6
       with:
+        version: latest
         args: --issues-exit-code 0 --out-format checkstyle:golangci-lint-report.out,colored-line-number
     - name: golangci-lint critical check
       run: |
