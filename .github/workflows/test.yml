@@ -22,7 +22,6 @@ jobs:
       uses: golangci/golangci-lint-action@v6
       with:
         version: v2.12.2
-        install-mode: goinstall
         args: --issues-exit-code 0 --output.checkstyle.path golangci-lint-report.out --output.text.path stdout
     - name: golangci-lint critical check
       run: |
