@@ -19,7 +19,7 @@ jobs:
         [[ ! -f ".golangci.yml" ]] && curl -kfsSL -O https://raw.githubusercontent.com/worldline-go/guide/main/lint/.golangci.yml
         echo GOPATH="$(dirname ${PWD})" >> $GITHUB_ENV
     - name: golangci-lint general
-      uses: golangci/golangci-lint-action@v6
+      uses: golangci/golangci-lint-action@v7
       with:
         version: v2.12.2
         args: --issues-exit-code 0 --output.checkstyle.path golangci-lint-report.out --output.text.path stdout
