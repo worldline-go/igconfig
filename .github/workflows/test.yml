@@ -21,7 +21,8 @@ jobs:
     - name: golangci-lint general
       uses: golangci/golangci-lint-action@v6
       with:
-        version: latest
+        version: v1.64.8
+        install-mode: goinstall
         args: --issues-exit-code 0 --out-format checkstyle:golangci-lint-report.out,colored-line-number
     - name: golangci-lint critical check
       run: |
