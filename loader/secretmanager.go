@@ -8,6 +8,7 @@ import (
 
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
+	"github.com/rs/zerolog/log"
 
 	"github.com/worldline-go/igconfig/codec"
 )
@@ -66,6 +67,8 @@ type SecretManager struct {
 func (l *SecretManager) LoadWithContext(ctx context.Context, appName string, to any) error {
 	err := l.EnsureClient(ctx)
 	if err != nil {
+		log.Ctx(ctx).Warn().Err(err).Msg("SecretManager: client setup failed")
+
 		return err
 	}
 
@@ -111,18 +114,26 @@ func (l *SecretManager) EnsureClient(ctx context.Context) error {
 
 // loadSecret fetches and decodes a single secret version. Returns nil if the secret does not exist.
 func (l *SecretManager) loadSecret(ctx context.Context, secretID string, to any) error {
+	resourceName := fmt.Sprintf("projects/%s/secrets/%s/versions/latest", l.ProjectID, gcpResourceName(secretID))
+	log.Ctx(ctx).Info().Str("resource", resourceName).Msg("SecretManager: fetching secret")
+
 	result, err := l.Client.AccessSecretVersion(ctx, &secretmanagerpb.AccessSecretVersionRequest{
-		Name: fmt.Sprintf("projects/%s/secrets/%s/versions/latest", l.ProjectID, secretID),
+		Name: resourceName,
 	})
 	if err != nil {
 		if isGCPNotFound(err) {
+			log.Ctx(ctx).Warn().Str("resource", resourceName).Msg("SecretManager: secret not found, skipping")
+
 			return nil
 		}
 
 		return fmt.Errorf("SecretManager.loadSecret %q: %w", secretID, err)
 	}
 
-	err = codec.LoadReaderWithDecoder(bytes.NewReader(result.GetPayload().GetData()), to, codec.YAML{}, SecretManagerTag)
+	payload := result.GetPayload().GetData()
+	log.Ctx(ctx).Info().Int("bytes", len(payload)).Str("secret", secretID).Msg("SecretManager: received payload")
+
+	err = codec.LoadReaderWithDecoder(bytes.NewReader(payload), to, codec.YAML{}, SecretManagerTag)
 	if err != nil {
 		return fmt.Errorf("SecretManager.loadSecret %q: %w", secretID, err)
 	}
