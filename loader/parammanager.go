@@ -51,8 +51,9 @@ type ParameterManager struct {
 }
 
 // LoadWithContext retrieves a parameter version from GCP Parameter Manager and decodes it into 'to'.
-func (l *ParameterManager) LoadWithContext(ctx context.Context, appName string, to interface{}) error {
-	if err := l.EnsureClient(ctx); err != nil {
+func (l *ParameterManager) LoadWithContext(ctx context.Context, appName string, to any) error {
+	err := l.EnsureClient(ctx)
+	if err != nil {
 		return err
 	}
 
@@ -67,7 +68,8 @@ func (l *ParameterManager) LoadWithContext(ctx context.Context, appName string, 
 		return fmt.Errorf("ParameterManager.LoadWithContext: %w", err)
 	}
 
-	if err := codec.LoadReaderWithDecoder(bytes.NewReader(result.RenderedPayload), to, codec.YAML{}, ParameterManagerTag); err != nil {
+	err = codec.LoadReaderWithDecoder(bytes.NewReader(result.GetRenderedPayload()), to, codec.YAML{}, ParameterManagerTag)
+	if err != nil {
 		return fmt.Errorf("ParameterManager.LoadWithContext: %w", err)
 	}
 
@@ -75,7 +77,7 @@ func (l *ParameterManager) LoadWithContext(ctx context.Context, appName string, 
 }
 
 // Load is the same as LoadWithContext without context.
-func (l *ParameterManager) Load(appName string, to interface{}) error {
+func (l *ParameterManager) Load(appName string, to any) error {
 	return l.LoadWithContext(context.Background(), appName, to)
 }
 
@@ -98,7 +100,7 @@ func (l *ParameterManager) EnsureClient(ctx context.Context) error {
 
 	l.Client, err = parametermanager.NewClient(ctx)
 	if err != nil {
-		return fmt.Errorf("%w: create parameter manager client: %v", ErrNoClient, err)
+		return fmt.Errorf("%w: create parameter manager client: %w", ErrNoClient, err)
 	}
 
 	return nil

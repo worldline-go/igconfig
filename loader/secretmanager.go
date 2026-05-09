@@ -14,7 +14,7 @@ import (
 
 // SecretManagerProjectIDEnv is the environment variable that enables the Secret Manager loader.
 // If this variable is not set, the loader is silently skipped.
-const SecretManagerProjectIDEnv = "GCP_PROJECT_ID"
+const SecretManagerProjectIDEnv = "GCP_PROJECT_ID" //nolint:gosec // env var name, not a credential
 
 // SecretManagerTag is the struct tag used for field name resolution.
 var SecretManagerTag = "secret"
@@ -39,7 +39,7 @@ var _ Loader = &SecretManager{}
 //   - The GCP client cannot be created (e.g., no Workload Identity or credentials)
 //
 // Individual secrets that do not exist are silently skipped (nil return),
-// matching the Vault loader's behaviour for missing paths.
+// matching the Vault loader's behavior for missing paths.
 //
 // Example usage with custom loaders:
 //
@@ -63,13 +63,15 @@ type SecretManager struct {
 
 // LoadWithContext retrieves secrets from GCP Secret Manager and decodes them into 'to'.
 // Additional secrets (e.g., "generic") are loaded first; the app-specific secret is loaded last.
-func (l *SecretManager) LoadWithContext(ctx context.Context, appName string, to interface{}) error {
-	if err := l.EnsureClient(ctx); err != nil {
+func (l *SecretManager) LoadWithContext(ctx context.Context, appName string, to any) error {
+	err := l.EnsureClient(ctx)
+	if err != nil {
 		return err
 	}
 
 	for _, name := range SecretManagerAdditionalSecrets {
-		if err := l.loadSecret(ctx, name, to); err != nil {
+		err = l.loadSecret(ctx, name, to)
+		if err != nil {
 			return err
 		}
 	}
@@ -78,7 +80,7 @@ func (l *SecretManager) LoadWithContext(ctx context.Context, appName string, to 
 }
 
 // Load is the same as LoadWithContext without context.
-func (l *SecretManager) Load(appName string, to interface{}) error {
+func (l *SecretManager) Load(appName string, to any) error {
 	return l.LoadWithContext(context.Background(), appName, to)
 }
 
@@ -101,14 +103,14 @@ func (l *SecretManager) EnsureClient(ctx context.Context) error {
 
 	l.Client, err = secretmanager.NewClient(ctx)
 	if err != nil {
-		return fmt.Errorf("%w: create secret manager client: %v", ErrNoClient, err)
+		return fmt.Errorf("%w: create secret manager client: %w", ErrNoClient, err)
 	}
 
 	return nil
 }
 
 // loadSecret fetches and decodes a single secret version. Returns nil if the secret does not exist.
-func (l *SecretManager) loadSecret(ctx context.Context, secretID string, to interface{}) error {
+func (l *SecretManager) loadSecret(ctx context.Context, secretID string, to any) error {
 	result, err := l.Client.AccessSecretVersion(ctx, &secretmanagerpb.AccessSecretVersionRequest{
 		Name: fmt.Sprintf("projects/%s/secrets/%s/versions/latest", l.ProjectID, secretID),
 	})
@@ -120,7 +122,8 @@ func (l *SecretManager) loadSecret(ctx context.Context, secretID string, to inte
 		return fmt.Errorf("SecretManager.loadSecret %q: %w", secretID, err)
 	}
 
-	if err := codec.LoadReaderWithDecoder(bytes.NewReader(result.Payload.Data), to, codec.YAML{}, SecretManagerTag); err != nil {
+	err = codec.LoadReaderWithDecoder(bytes.NewReader(result.GetPayload().GetData()), to, codec.YAML{}, SecretManagerTag)
+	if err != nil {
 		return fmt.Errorf("SecretManager.loadSecret %q: %w", secretID, err)
 	}
 
