@@ -67,7 +67,7 @@ type SecretManager struct {
 func (l *SecretManager) LoadWithContext(ctx context.Context, appName string, to any) error {
 	err := l.EnsureClient(ctx)
 	if err != nil {
-		log.Ctx(ctx).Warn().Err(err).Msg("SecretManager: client setup failed")
+		log.Ctx(ctx).Debug().Err(err).Msg("SecretManager: client setup failed")
 
 		return err
 	}
@@ -115,14 +115,14 @@ func (l *SecretManager) EnsureClient(ctx context.Context) error {
 // loadSecret fetches and decodes a single secret version. Returns nil if the secret does not exist.
 func (l *SecretManager) loadSecret(ctx context.Context, secretID string, to any) error {
 	resourceName := fmt.Sprintf("projects/%s/secrets/%s/versions/latest", l.ProjectID, gcpResourceName(secretID))
-	log.Ctx(ctx).Info().Str("resource", resourceName).Msg("SecretManager: fetching secret")
+	log.Ctx(ctx).Debug().Str("resource", resourceName).Msg("SecretManager: fetching secret")
 
 	result, err := l.Client.AccessSecretVersion(ctx, &secretmanagerpb.AccessSecretVersionRequest{
 		Name: resourceName,
 	})
 	if err != nil {
 		if isGCPNotFound(err) {
-			log.Ctx(ctx).Warn().Str("resource", resourceName).Msg("SecretManager: secret not found, skipping")
+			log.Ctx(ctx).Debug().Str("resource", resourceName).Msg("SecretManager: secret not found, skipping")
 
 			return nil
 		}
@@ -131,7 +131,7 @@ func (l *SecretManager) loadSecret(ctx context.Context, secretID string, to any)
 	}
 
 	payload := result.GetPayload().GetData()
-	log.Ctx(ctx).Info().Int("bytes", len(payload)).Str("secret", secretID).Msg("SecretManager: received payload")
+	log.Ctx(ctx).Debug().Int("bytes", len(payload)).Msg("SecretManager: received payload")
 
 	err = codec.LoadReaderWithDecoder(bytes.NewReader(payload), to, codec.YAML{}, SecretManagerTag)
 	if err != nil {

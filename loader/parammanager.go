@@ -55,20 +55,20 @@ type ParameterManager struct {
 func (l *ParameterManager) LoadWithContext(ctx context.Context, appName string, to any) error {
 	err := l.EnsureClient(ctx)
 	if err != nil {
-		log.Ctx(ctx).Warn().Err(err).Msg("ParameterManager: client setup failed")
+		log.Ctx(ctx).Debug().Err(err).Msg("ParameterManager: client setup failed")
 
 		return err
 	}
 
 	resourceName := fmt.Sprintf("projects/%s/locations/global/parameters/%s/versions/latest", l.ProjectID, gcpResourceName(appName))
-	log.Ctx(ctx).Info().Str("resource", resourceName).Msg("ParameterManager: fetching parameter")
+	log.Ctx(ctx).Debug().Str("resource", resourceName).Msg("ParameterManager: fetching parameter")
 
 	result, err := l.Client.RenderParameterVersion(ctx, &parametermanagerpb.RenderParameterVersionRequest{
 		Name: resourceName,
 	})
 	if err != nil {
 		if isGCPNotFound(err) {
-			log.Ctx(ctx).Warn().Str("resource", resourceName).Msg("ParameterManager: parameter not found, skipping")
+			log.Ctx(ctx).Debug().Str("resource", resourceName).Msg("ParameterManager: parameter not found, skipping")
 
 			return nil
 		}
@@ -77,7 +77,7 @@ func (l *ParameterManager) LoadWithContext(ctx context.Context, appName string, 
 	}
 
 	payload := result.GetRenderedPayload()
-	log.Ctx(ctx).Info().Int("bytes", len(payload)).Msg("ParameterManager: received payload")
+	log.Ctx(ctx).Debug().Int("bytes", len(payload)).Msg("ParameterManager: received payload")
 
 	err = codec.LoadReaderWithDecoder(bytes.NewReader(payload), to, codec.YAML{}, ParameterManagerTag)
 	if err != nil {
