@@ -25,3 +25,15 @@ func isGCPNotFound(err error) bool {
 
 	return ok && s.Code() == codes.NotFound
 }
+
+// isGCPFailedPrecondition returns true when a GCP API call fails with FailedPrecondition.
+// Parameter Manager returns this when the requested version is disabled.
+func isGCPFailedPrecondition(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	s, ok := status.FromError(err)
+
+	return ok && s.Code() == codes.FailedPrecondition
+}
