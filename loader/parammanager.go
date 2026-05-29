@@ -98,6 +98,36 @@ func (l *ParameterManager) LoadWithContext(ctx context.Context, appName string, 
 	return nil
 }
 
+// Load is the same as LoadWithContext without context.
+func (l *ParameterManager) Load(appName string, to any) error {
+	return l.LoadWithContext(context.Background(), appName, to)
+}
+
+// EnsureClient creates and sets a GCP Parameter Manager client if needed.
+// Returns ErrNoClient if GCP_PROJECT_ID is not set or if the client cannot be created.
+func (l *ParameterManager) EnsureClient(ctx context.Context) error {
+	if l.ProjectID == "" {
+		l.ProjectID = os.Getenv(ParameterManagerProjectIDEnv)
+	}
+
+	if l.ProjectID == "" {
+		return fmt.Errorf("%w: %s not set", ErrNoClient, ParameterManagerProjectIDEnv)
+	}
+
+	if l.Client != nil {
+		return nil
+	}
+
+	var err error
+
+	l.Client, err = parametermanager.NewClient(ctx)
+	if err != nil {
+		return fmt.Errorf("%w: create parameter manager client: %w", ErrNoClient, err)
+	}
+
+	return nil
+}
+
 // loadLatestEnabledVersion lists all versions of a parameter and renders the most recently
 // created enabled one. Returns nil (skip) if no enabled versions exist.
 func (l *ParameterManager) loadLatestEnabledVersion(ctx context.Context, paramName string, to any) error {
@@ -150,36 +180,6 @@ func (l *ParameterManager) loadLatestEnabledVersion(ctx context.Context, paramNa
 	err = codec.LoadReaderWithDecoder(bytes.NewReader(payload), to, codec.YAML{}, ParameterManagerTag)
 	if err != nil {
 		return fmt.Errorf("ParameterManager.loadLatestEnabledVersion: %w", err)
-	}
-
-	return nil
-}
-
-// Load is the same as LoadWithContext without context.
-func (l *ParameterManager) Load(appName string, to any) error {
-	return l.LoadWithContext(context.Background(), appName, to)
-}
-
-// EnsureClient creates and sets a GCP Parameter Manager client if needed.
-// Returns ErrNoClient if GCP_PROJECT_ID is not set or if the client cannot be created.
-func (l *ParameterManager) EnsureClient(ctx context.Context) error {
-	if l.ProjectID == "" {
-		l.ProjectID = os.Getenv(ParameterManagerProjectIDEnv)
-	}
-
-	if l.ProjectID == "" {
-		return fmt.Errorf("%w: %s not set", ErrNoClient, ParameterManagerProjectIDEnv)
-	}
-
-	if l.Client != nil {
-		return nil
-	}
-
-	var err error
-
-	l.Client, err = parametermanager.NewClient(ctx)
-	if err != nil {
-		return fmt.Errorf("%w: create parameter manager client: %w", ErrNoClient, err)
 	}
 
 	return nil
