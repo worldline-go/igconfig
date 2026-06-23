@@ -1,0 +1,54 @@
+{
+  "files": {
+    "CLAUDE.md": {
+      "lines_added": 130,
+      "lines_removed": 8
+    },
+    "docs/CODEMAPS/architecture.md": {
+      "lines_added": 50,
+      "lines_removed": 4
+    },
+    "docs/CODEMAPS/dependencies.md": {
+      "lines_added": 49,
+      "lines_removed": 7
+    },
+    "docs/CODEMAPS/backend.md": {
+      "lines_added": 112,
+      "lines_removed": 10
+    },
+    ".reports/codemap-diff.txt": {
+      "lines_added": 25,
+      "lines_removed": 0
+    },
+    "loader/gcputil.go": {
+      "lines_added": 56,
+      "lines_removed": 17
+    },
+    "loader/parammanager.go": {
+      "lines_added": 299,
+      "lines_removed": 113
+    },
+    "loader/secretmanager.go": {
+      "lines_added": 228,
+      "lines_removed": 86
+    },
+    "config.go": {
+      "lines_added": 10,
+      "lines_removed": 8
+    },
+    "README.md": {
+      "lines_added": 60,
+      "lines_removed": 12
+    },
+    "go.mod": {
+      "lines_added": 1,
+      "lines_removed": 1
+    },
+    ".github/workflows/test.yml": {
+      "lines_added": 22,
+      "lines_removed": 21
+    }
+  },
+  "total_lines_added": 1042,
+  "total_lines_removed": 287
+}

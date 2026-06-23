@@ -8,7 +8,8 @@
 
 
 This package can be used to load configuration values from a configuration file,
-environment variables, Consul, Vault and/or command-line parameters.
+environment variables, Consul, Vault, GCP Parameter Manager, GCP Secret Manager,
+and/or command-line parameters.
 
 ## Install
 
@@ -132,7 +133,9 @@ Change order of loaders and configurations:
 loaders := []loader.Loader{
 	&loader.Default{},
 	&loader.Consul{},
+	&loader.ParameterManager{},
 	&loader.Vault{},
+	&loader.SecretManager{},
 	&loader.File{},
 	&loader.Env{},
 	&loader.Flags{},
@@ -265,6 +268,51 @@ from the configuration file.
 Don't want to read a value just delete it in your config file or add `cfg:"-"`.
 
 FileLoader editable, you can add your own decoder or new file format or order of file suffixes.
+
+### GCP Parameter Manager
+
+Loads configuration from GCP Parameter Manager using `cfg` tags to decode the rendered YAML into a struct.
+
+Uses GCP Workload Identity Federation automatically — no credentials or service account keys required when running on GKE.
+
+If `GCP_PROJECT_ID` is not set, or if the GCP client cannot be created, this loader is silently skipped.
+If the parameter named `<appname>` does not exist, it is also silently skipped.
+
+| Environment variable | Meaning |
+| -------------------- | ------- |
+| `GCP_PROJECT_ID`     | GCP project ID. If not set, loader is skipped. |
+
+The parameter name in GCP must match `appName`. The parameter value must be valid YAML with keys matching `cfg` struct tags.
+
+Configurable package-level vars:
+
+```go
+loader.ParameterManagerTag = "cfg" // struct tag for field mapping
+```
+
+### GCP Secret Manager
+
+Loads configuration from GCP Secret Manager using `secret` tags (falling back to `cfg`) to decode YAML secrets into a struct.
+
+Uses GCP Workload Identity Federation automatically — no credentials or service account keys required when running on GKE.
+
+If `GCP_PROJECT_ID` is not set, or if the GCP client cannot be created, this loader is silently skipped.
+Individual secrets that do not exist are silently skipped.
+
+Loading order (equivalent to Vault's generic + app-specific pattern):
+1. Each secret in `SecretManagerAdditionalSecrets` (default: `"generic"`)
+2. The app-specific secret named `<appname>`
+
+| Environment variable | Meaning |
+| -------------------- | ------- |
+| `GCP_PROJECT_ID`     | GCP project ID. If not set, loader is skipped. |
+
+Configurable package-level vars:
+
+```go
+loader.SecretManagerTag               = "secret"        // struct tag for field mapping
+loader.SecretManagerAdditionalSecrets = []string{"generic"} // loaded before app-specific secret
+```
 
 ### Environment variables
 

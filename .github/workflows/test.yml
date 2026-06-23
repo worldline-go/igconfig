@@ -11,17 +11,18 @@ jobs:
       with:
         # Disabling shallow clone is recommended for improving relevancy of reporting
         fetch-depth: 0
-    - uses: actions/setup-go@v4
+    - uses: actions/setup-go@v5
       with:
-        go-version: '1.21' # The Go version to download (if necessary) and use.
+        go-version-file: 'go.mod'
     - name: golangci config
       run: |
         [[ ! -f ".golangci.yml" ]] && curl -kfsSL -O https://raw.githubusercontent.com/worldline-go/guide/main/lint/.golangci.yml
         echo GOPATH="$(dirname ${PWD})" >> $GITHUB_ENV
     - name: golangci-lint general
-      uses: golangci/golangci-lint-action@v3
+      uses: golangci/golangci-lint-action@v7
       with:
-        args: --issues-exit-code 0 --out-format checkstyle:golangci-lint-report.out,colored-line-number
+        version: v2.12.2
+        args: --issues-exit-code 0 --output.checkstyle.path golangci-lint-report.out --output.text.path stdout
     - name: golangci-lint critical check
       run: |
         golangci-lint run --new-from-rev remotes/origin/${{ github.event.repository.default_branch }} ./...

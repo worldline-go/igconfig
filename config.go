@@ -15,7 +15,9 @@ import (
 var DefaultLoaders = []loader.Loader{
 	&loader.Default{},
 	&loader.Consul{},
+	&loader.ParameterManager{},
 	&loader.Vault{},
+	&loader.SecretManager{},
 	&loader.File{},
 	&loader.Env{},
 }
