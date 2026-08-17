@@ -12,6 +12,7 @@ import (
 	"cloud.google.com/go/parametermanager/apiv1/parametermanagerpb"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/api/iterator"
+	"google.golang.org/api/option"
 
 	"github.com/worldline-go/igconfig/codec"
 )
@@ -19,6 +20,19 @@ import (
 // ParameterManagerProjectIDEnv is the environment variable that enables the Parameter Manager loader.
 // If this variable is not set, the loader is silently skipped.
 const ParameterManagerProjectIDEnv = "GCP_PROJECT_ID"
+
+// ParameterManagerLocationEnv is the environment variable that sets the GCP location
+// (region) Parameter Manager resources are read from. If not set, defaults to "global".
+//
+// Some GCP organizations restrict resource creation to specific regions via the
+// constraints/gcp.resourceLocations org policy, which does not always allow "global" —
+// in that case, parameters must be created in an allowed region and this env var (or the
+// Location field) must be set to match.
+const ParameterManagerLocationEnv = "GCP_PARAMETER_LOCATION"
+
+// ParameterManagerDefaultLocation is used when neither Location nor the
+// ParameterManagerLocationEnv environment variable is set.
+const ParameterManagerDefaultLocation = "global"
 
 // ParameterManagerTag is the struct tag used for field name resolution.
 var ParameterManagerTag = "cfg"
@@ -40,7 +54,7 @@ var _ Loader = &ParameterManager{}
 //	loaders := []loader.Loader{
 //	    &loader.Default{},
 //	    &loader.Consul{},
-//	    &loader.ParameterManager{ProjectID: "my-gcp-project"},
+//	    &loader.ParameterManager{ProjectID: "my-gcp-project", Location: "europe-west3"},
 //	    &loader.Vault{},
 //	    &loader.File{},
 //	    &loader.Env{},
@@ -52,6 +66,13 @@ type ParameterManager struct {
 	Client *parametermanager.Client
 	// ProjectID is the GCP project ID. If empty, read from GCP_PROJECT_ID env var.
 	ProjectID string
+	// Location is the GCP region parameters are read from. If empty, read from the
+	// ParameterManagerLocationEnv env var, defaulting to "global" if that is also unset.
+	//
+	// Non-"global" locations use the regional Parameter Manager endpoint
+	// (parametermanager.<location>.rep.googleapis.com) — the global endpoint only serves
+	// "global" resources and returns PERMISSION_DENIED for regional ones.
+	Location string
 }
 
 // LoadWithContext retrieves a parameter version from GCP Parameter Manager and decodes it into 'to'.
@@ -64,7 +85,7 @@ func (l *ParameterManager) LoadWithContext(ctx context.Context, appName string, 
 		return err
 	}
 
-	paramName := fmt.Sprintf("projects/%s/locations/global/parameters/%s", l.ProjectID, gcpResourceName(appName))
+	paramName := fmt.Sprintf("projects/%s/locations/%s/parameters/%s", l.ProjectID, l.Location, gcpResourceName(appName))
 	resourceName := paramName + "/versions/latest"
 	log.Ctx(ctx).Debug().Str("resource", resourceName).Msg("ParameterManager: fetching parameter")
 
@@ -114,13 +135,29 @@ func (l *ParameterManager) EnsureClient(ctx context.Context) error {
 		return fmt.Errorf("%w: %s not set", ErrNoClient, ParameterManagerProjectIDEnv)
 	}
 
+	if l.Location == "" {
+		l.Location = os.Getenv(ParameterManagerLocationEnv)
+	}
+
+	if l.Location == "" {
+		l.Location = ParameterManagerDefaultLocation
+	}
+
 	if l.Client != nil {
 		return nil
 	}
 
+	var opts []option.ClientOption
+
+	if l.Location != ParameterManagerDefaultLocation {
+		// Regional resources are only served from the regional endpoint — the global
+		// endpoint returns PERMISSION_DENIED for them.
+		opts = append(opts, option.WithEndpoint(fmt.Sprintf("parametermanager.%s.rep.googleapis.com:443", l.Location)))
+	}
+
 	var err error
 
-	l.Client, err = parametermanager.NewClient(ctx)
+	l.Client, err = parametermanager.NewClient(ctx, opts...)
 	if err != nil {
 		return fmt.Errorf("%w: create parameter manager client: %w", ErrNoClient, err)
 	}
