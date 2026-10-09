@@ -21,3 +21,21 @@ func TestLoadConfig_Skip(t *testing.T) {
 
 	require.NoError(t, igconfig.LoadWithLoaders("skipApp", &c, testLoaders...))
 }
+
+func TestNameWithPrefix(t *testing.T) {
+	tests := []struct {
+		prefix string
+		name   string
+		want   string
+	}{
+		{prefix: "", name: "app", want: "app"},
+		{prefix: "team", name: "app", want: "team/app"},
+		{prefix: "/team/", name: "/app/", want: "team/app"},
+		{prefix: "a/b", name: "app", want: "a/b/app"},
+	}
+
+	for _, tt := range tests {
+		t.Setenv(igconfig.ConfigNamePrefixEnv, tt.prefix)
+		require.Equal(t, tt.want, igconfig.NameWithPrefix(tt.name))
+	}
+}

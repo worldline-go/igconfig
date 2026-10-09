@@ -64,6 +64,8 @@ func LoadWithLoaders(appName string, configStruct interface{}, loaders ...loader
 There are also context accepted functions `LoadConfigWithContext`, `LoadWithLoadersWithContext`.
 
 - `appName` is name of application. It is used in Consul and Vault to find proper path for variables also file name for file loader.
+  - `CONFIG_NAME_PREFIX` env value can be used to set a prefix for the `appName`, resulting name is `<prefix>/<appName>` for all loaders.
+    File loader only uses the last part of the name; GCP loaders replace `/` with `-` (e.g. `team-myapp`).
 - `config` must be a pointer to struct. Otherwise, the function will fail with an error.
 - `loaders` is list of Loaders to use.
 

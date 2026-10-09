@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/rs/zerolog/log"
 
@@ -39,8 +41,25 @@ func LoadWithLoaders(appName string, configStruct interface{}, loaders ...loader
 	return LoadWithLoadersWithContext(context.Background(), appName, configStruct, loaders...)
 }
 
+// ConfigNamePrefixEnv is the environment variable that sets a prefix for the appName,
+// resulting name is "<prefix>/<appName>".
+const ConfigNamePrefixEnv = "CONFIG_NAME_PREFIX"
+
+// NameWithPrefix returns the appName with the CONFIG_NAME_PREFIX env value prepended, if set.
+func NameWithPrefix(appName string) string {
+	if v := os.Getenv(ConfigNamePrefixEnv); v != "" {
+		return strings.Trim(strings.Trim(v, "/")+"/"+strings.Trim(appName, "/"), "/")
+	}
+
+	return appName
+}
+
 // LoadWithLoadersWithContext uses provided Loader's to fill 'configStruct'.
+//
+// If CONFIG_NAME_PREFIX env is set, appName becomes "<prefix>/<appName>".
 func LoadWithLoadersWithContext(ctx context.Context, appName string, configStruct interface{}, loaders ...loader.Loader) error {
+	appName = NameWithPrefix(appName)
+
 	for _, configLoader := range loaders {
 		select {
 		case <-ctx.Done():
