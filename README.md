@@ -277,10 +277,16 @@ Uses GCP Workload Identity Federation automatically — no credentials or servic
 
 If `GCP_PROJECT_ID` is not set, or if the GCP client cannot be created, this loader is silently skipped.
 If the parameter named `<appname>` does not exist, it is also silently skipped.
+If the `latest` version is disabled, the most recently created enabled version is loaded instead.
 
-| Environment variable | Meaning |
-| -------------------- | ------- |
-| `GCP_PROJECT_ID`     | GCP project ID. If not set, loader is skipped. |
+Environment variables are read on every load and take priority over the struct fields.
+
+| Environment variable     | Field                    | Meaning |
+| ------------------------ | ------------------------ | ------- |
+| `GCP_PROJECT_ID`         | `ProjectID`              | GCP project ID. If not set, loader is skipped. |
+| `GCP_PARAMETER_LOCATION` | `Location`               | GCP location (region), default `global`. Non-global uses the regional endpoint. |
+| `GCP_PARAMETER_VERSION`  | `Version`                | Parameter version to render, default `latest`. |
+| `GCP_PARAMETER_FALLBACK` | `DisableVersionFallback` | Enable/disable fallback to latest enabled version (bool), default `true`. |
 
 The parameter name in GCP must match `appName`. The parameter value must be valid YAML with keys matching `cfg` struct tags.
 
@@ -300,12 +306,17 @@ If `GCP_PROJECT_ID` is not set, or if the GCP client cannot be created, this loa
 Individual secrets that do not exist are silently skipped.
 
 Loading order (equivalent to Vault's generic + app-specific pattern):
-1. Each secret in `SecretManagerAdditionalSecrets` (default: `"generic"`)
+1. Each additional secret (default: `"generic"`)
 2. The app-specific secret named `<appname>`
 
-| Environment variable | Meaning |
-| -------------------- | ------- |
-| `GCP_PROJECT_ID`     | GCP project ID. If not set, loader is skipped. |
+Environment variables are read on every load and take priority over the struct fields.
+
+| Environment variable    | Field               | Meaning |
+| ----------------------- | ------------------- | ------- |
+| `GCP_PROJECT_ID`        | `ProjectID`         | GCP project ID. If not set, loader is skipped. |
+| `GCP_SECRET_LOCATION`   | `Location`          | GCP location (region), default `global`. Non-global uses the regional endpoint. |
+| `GCP_SECRET_VERSION`    | `Version`           | Secret version to access, default `latest`. |
+| `GCP_SECRET_ADDITIONAL` | `AdditionalSecrets` | Comma-separated secrets loaded before the app secret, default `SecretManagerAdditionalSecrets`. |
 
 Configurable package-level vars:
 
